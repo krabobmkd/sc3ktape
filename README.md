@@ -2,17 +2,11 @@
 Sega SC-3000 Tape Wave Conversion tool (C++)
 
 Compile with C++14
-              ________  __     __
-   ______ ____ \_____  \|  | __/  |______  ______   ____ 
-  /  ____/ ___\  _(__  <|  |/ \   __\__  \ \____ \_/ __ \
-  \___ \\  \___ /       |    < |  |  / __ \|  |_> \  ___/
- /____  >\___  /______  |__|_ \|__| (____  |   __/ \___  >
-      \/     \/       \/     \/          \/|__|        \/
 
- Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9 2022
-   >sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic
-   >sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave
-   >sc3ktape file.bin -o file.wave [options] convert asm binary to wave
+ Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9
+   sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic
+   sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave
+   sc3ktape file.bin -o file.wave [options] convert asm binary to wave
  tape to basic options:
    -jp:      for japan basic, use utf8 katakana, else european dieresis.
    -tolabel: replace lines number by tabs and generate labels (usable with b2t).
