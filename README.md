@@ -8,12 +8,15 @@ Compile with C++14
 usage:
  
 sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic.
+
 sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave.
+
 sc3ktape file.bin -o file.wave [options] convert asm binary to wave.
 
 tape to basic options:
  
  -jp:      for japan basic, use utf8 katakana, else european dieresis.
+
  -tolabel: replace lines number by tabs and generate labels (usable with b2t).
 
 basic to tape options:
@@ -23,7 +26,6 @@ basic to tape options:
 Input waves can use any frequencies (22050Hz,44100Hz), must be mono.
 
 Ouput waves are always 8bit/ 22050Hz, which is enough for the hardware.
-
 
  Still beta but ok to put on main because usable.
  no known bug for basic to wave and wave to basic conversions, but more programs has yet to be tested to make sure all opcodes are correctly translated.
