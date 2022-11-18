@@ -32,7 +32,7 @@ Ouput waves are always 8bit/ 22050Hz, which is enough for the hardware.
  
  Note The file extension choosed for Sega Basic text file on the PC side is ".sc.bas": it makes it directly highlightable from a lots of editor that already detect .bas files as Basic files (Kate, QtCreator,...).
   
- Note with -tolabel option, the lines of the original source are removed, replaced with tabs at lines start, and asm-like labels are added at the place where goto, gosub,restore would serach them ("on gosub" syntax with multiple jump are managed)
+ Note with -tolabel option, the lines of the original source are removed, replaced with tabs at lines start, and asm-like labels are added at the place where goto, gosub,restore would search them ("on gosub" syntax with multiple jump are managed)
  Line numbers are recomputed the correct way when program is translated back to wave sound format. 
 
 
