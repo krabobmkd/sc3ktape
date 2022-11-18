@@ -3,22 +3,26 @@ Sega SC-3000 Tape Wave Conversion tool (C++)
 
 Compile with C++14
 
- Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9
-   sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic
-   sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave
-   sc3ktape file.bin -o file.wave [options] convert asm binary to wave
- tape to basic options:
-   -jp:      for japan basic, use utf8 katakana, else european dieresis.
-   -tolabel: replace lines number by tabs and generate labels (usable with b2t).
- basic to tape options:
-   -nNAME: give header prog file name for tape wave header.
- Input waves can use any frequencies (22050Hz,44100Hz), must be mono.
- Ouput waves are always 8bit/ 22050Hz, which is enough for the hardware.
+# Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9
 
+usage:
+ 
+sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic
+sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave
+sc3ktape file.bin -o file.wave [options] convert asm binary to wave
+tape to basic options:
+ 
+ -jp:      for japan basic, use utf8 katakana, else european dieresis.
+ -tolabel: replace lines number by tabs and generate labels (usable with b2t).
+basic to tape options:
+ -nNAME: give header prog file name for tape wave header.
+Input waves can use any frequencies (22050Hz,44100Hz), must be mono.
+Ouput waves are always 8bit/ 22050Hz, which is enough for the hardware.
 
  Still beta but ok to put on main because usable.
  no known bug for basic to wave and wave to basic conversions, but more programs has yet to be tested to make sure all opcodes are correctly translated.
- 
+
+# Interesting part 
  
  The Sega SC3000 8Bit computer (1983-1985) was the computer version of the SG1000 console which prefigure the Sega Master System, and has actually a quite well done BASIC available as a cartridge. The 3 Console SG1000, MarkII and MarkIII could also use it with the keyboard extension. And the interesting thing is that basic and assembler program could be loaded from a cassette player that was linked to the computer or console with a standard audio mini jack cable. So You can just directly plug your PC output jack to your Sega SC3000 cassette input, type LOAD into the basic, and play the program as wave from your PC. 
  
