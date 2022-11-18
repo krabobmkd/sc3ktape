@@ -8,15 +8,12 @@ Compile with C++14
 usage:
  
 sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic.
-
 sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave.
-
 sc3ktape file.bin -o file.wave [options] convert asm binary to wave.
 
 tape to basic options:
  
  -jp:      for japan basic, use utf8 katakana, else european dieresis.
-
  -tolabel: replace lines number by tabs and generate labels (usable with b2t).
 
 basic to tape options:
