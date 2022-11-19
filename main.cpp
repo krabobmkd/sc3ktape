@@ -72,6 +72,9 @@ int main(int argc, char *argv[])
     ifstream inputstream(inputfile.c_str(),ios::binary);
     size_t rif = inputfile.rfind(".bin");
     bool endsWithbin = (rif!=string::npos && rif == inputfile.length()-4);
+    string basepath = ".";
+    size_t rifb = inputfile.find_last_of("\\/");
+    if(rifb != string::npos) basepath = inputfile.substr(0,rifb);
 
     if(!inputstream.good())
     {
@@ -114,8 +117,7 @@ int main(int argc, char *argv[])
 
     try {
     if(isSoundFormat)
-    {   // - - - - input is wave
-
+    {       // - - - - input is wave
             SC3KBasic wr;
             wr.setIsEuroAscii(!jpCharset);
             wr.readWave(inputstream);
@@ -131,12 +133,23 @@ int main(int argc, char *argv[])
                 throw runtime_error(string("can't write to: ") + outputfile);
             }
             wr.writeBasic(ofs);
-           LOGI() << "Tape Wave exported to Basic source: " << outputfile << endl;
-
-        LOGI() << "got through" << endl;
+            LOGI() << "Tape Wave exported to Basic source: " << outputfile << endl;
+            if(wr.hasPostBinary())
+            {
+                string postbinfilename = outputfile + ".post.bin";
+                ofstream ofspb(postbinfilename.c_str(), ios::binary);
+                if( !ofspb.good())
+                {
+                    throw runtime_error(string("can't write .post.bin file to: ") + postbinfilename);
+                }
+                wr.writePostBinary(ofspb);
+                LOGI() << "Also exported extra post-binary of length: "<< wr.postBinaryLength()
+                       <<" to binary file: " << postbinfilename << endl;
+            }
     } else
     {
         SC3KBasic wr;
+        wr.setSourceBasePath(basepath);
         if(endsWithbin)
         {   // assembler to tape wave case
             wr.readAsmBin(inputstream);

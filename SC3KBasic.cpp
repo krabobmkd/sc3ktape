@@ -1,5 +1,5 @@
 /*            ________  __     __
-  ______ ____ \_____  \|  | __/  |______  ______   ____  🖭
+  ______ ____ \_____  \|  | __/  |______  ______   ____
  /  ____/ ___\  _(__  <|  |/ \   __\__  \ \____ \_/ __ \
  \___ \\  \___ /       |    < |  |  / __ \|  |_> \  ___/
 /____  >\___  /______  |__|_ \|__| (____  |   __/ \___  >
@@ -26,12 +26,20 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <fstream>
+#include <algorithm>
+
+#include "log.h"
 
 using namespace std;
 
 #ifndef uint32_t
 typedef unsigned int uint32_t; 
 #endif
+// displays 12kb free at boot... probably consider if opcodes wouldnt compress that.
+#define BASIC_LEVEL_III_A_MAX_BINARY_SIZE (8192+2048-1024)
+// displays 26kb free at boot... which is crazy
+#define BASIC_LEVEL_III_B_MAX_BINARY_SIZE (8192+16384-1024)
 
 #define KEYCODE_BASICHEADER 0x16
 #define KEYCODE_BASICPROGRAM 0x17
@@ -165,6 +173,7 @@ upair BasicKeywords[]=
     {0x80a5,"mid$"},
     {0x80a6,"str$"},
     {0x80a7,"time$"},
+
 };
 
 // {0x9d,"goto"},
@@ -180,10 +189,76 @@ typedef enum {
     epm_Rem
 } eParseMode;
 
+size_t findNoCase(const std::string &str, const std::string &s, size_t start=0 )
+{
+    string stra=str;
+    std::transform(stra.begin(), stra.end(), stra.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    return stra.find(s,start);
+}
+int strReplaceNoCase(std::string &s,const std::string &bef,const std::string &aft)
+{
+    size_t i=0;
+    size_t in = findNoCase(s,bef,i);
+    if(in == string::npos) return 0;
+    string ns;
+    int nbdone=0;
+    while(in != string::npos)
+    {
+        ns += s.substr(i,in-i); // same chain between
+        ns +=aft;
+        nbdone++;
+        i = in + bef.length();
+        in = findNoCase(s,bef,i);
+    }
+    ns += s.substr(i,in-i); // till end
+
+    s = ns;
+    return nbdone;
+}
+// stra strab must be same size.
+void replaceInBin( vector<unsigned char> &bin,const std::string &stra,const std::string &strb)
+{
+    size_t i=0;
+    while(i<bin.size())
+    {
+        if(stra[0]!=(char)bin[i])
+        {
+            i++;
+            continue;
+        }
+        bool isFound=true;
+        for(size_t j=0; j<stra.length() ; j++ )
+        {
+            if(stra[j] !=(char)bin[i+j])
+            {
+                isFound=false;
+                break;
+            }
+        }
+        if(!isFound)
+        {
+            i++;
+            continue;
+        }
+        // -- found one !
+        for(size_t j=0; j<stra.length() ; j++ )
+        {
+            bin[i+j] = strb[j];
+        }
+        i+= stra.length();
+    }
+}
+void strTrim(std::string &s) {
+    size_t i = s.find_last_not_of(" \n\r\t");
+    if( i != string::npos ) s = s.substr(0,i+1);
+    i = s.find_first_not_of(" \n\r\t");
+    s = s.substr(i);
+}
 unsigned short findKeyCode(const std::string &v, size_t il, string &strfound)
 {
     strfound="";
-    // bruteforce
+    // bruteforce because of some C99 port
    // vector<upair>::iterator it = BasicKeywords.begin();
    // while(it != BasicKeywords.end())
     for(int i=0; i< sizeof(BasicKeywords)/sizeof(upair) ; i++ )
@@ -317,6 +392,7 @@ SC3KBasic::SC3KBasic()
     , _ProgramLength(0)
     , _ProgramStart(0)
     , m_isEuroAscii(false)
+    , m_postBinaryLength(0)
 {
 
 }
@@ -509,6 +585,18 @@ int SC3KBasic::readWave(std::istream &inputStream)
             lineCodeLength = (unsigned int)programBin[i] ;
             if(lineCodeLength==0)
             {
+              //  cout << "line code length 0 means end" << endl;
+                if(i<_ProgramLength)
+                {
+                    // put post binary in separate file
+                    m_postBinaryStream.clear();
+                    m_postBinaryStream.str(string());
+                    // stringstream used as binary fifo:
+                    int postbinlength = (_ProgramLength-i);
+                    m_postBinaryStream.write((char*)&programBin[i+1],postbinlength);
+                    m_postBinaryLength = postbinlength;
+                }
+           // cout << "basic end at byte: " << (i-1) << " when program end is: " << _ProgramLength << endl;
                 // means end of chunk !!!
                 break;
             }
@@ -531,7 +619,7 @@ int SC3KBasic::readWave(std::istream &inputStream)
 
         unsigned char c =programBin[i];
         if(c==0) continue;
-        if(c<0x82)
+        if(c<0x80)
         {
             if(c==13)
             {
@@ -622,17 +710,13 @@ int SC3KBasic::readWave(std::istream &inputStream)
     return 0;
 }
 
-unsigned char trscase(unsigned char c)
-{
-    if(c>='A' && c <= 'Z' ) return c += 'a'-'A';
-    return c;
-}
-
 void replaceLabelsByLine(std::string &s, const map<string,uint32_t> &labelToLine)
 {
-    string sLower;
+    string sLower=s;
     string sresult;
-    std::transform(sLower.begin(), s.end(), s.begin(),trscase);
+
+    std::transform(sLower.begin(), sLower.end(), sLower.begin(),
+        [](unsigned char c){ return std::tolower(c); });
 
     const string opcodes[]={"gosub","goto","restore"};
     size_t il=0;
@@ -717,9 +801,14 @@ int SC3KBasic::readBasic(std::istream &ifs)
 
     string line;
     getline(ifs,line);
-    while(line.length()>0)
+    while(ifs.peek() != EOF )
     {
-        if(line[0]< '0' || line[0]> '9' )
+        if(line.length()==0 || line[0]=='#' )
+        {
+            getline(ifs,line);
+            continue;
+        }
+        if((line[0]< '0' || line[0]> '9') && !renumMode )
         {
             cout << "no number found for line, use renum mode." << endl;
             renumMode = true;
@@ -727,9 +816,10 @@ int SC3KBasic::readBasic(std::istream &ifs)
         line.erase(line.find_last_not_of(" \n\r")+1);
         if(renumMode)
         {
-            if(line[0] == '\t')
+            if(line[0] == '\t' || line[0] == ' ')
             {   // code line
-                string codeline = line.substr(1);
+                string codeline = line; //.substr(1);
+                strTrim(codeline);
                 if(codeline.length()>0)
                 {
                     // replace label later !
@@ -779,7 +869,7 @@ int SC3KBasic::readAsmBin(std::istream &inputStream)
 {
 
     /*
-    YET TO BE VALIATED
+    YET TO BE VALIDATED ON REAL HARDWARE
 */
 
     m_basicStream.clear();
@@ -791,10 +881,17 @@ int SC3KBasic::readAsmBin(std::istream &inputStream)
     inputStream.seekg(0,istream::end);
     size_t binsize = (size_t)inputStream.tellg();
     inputStream.seekg(0,istream::beg);
-    if(binsize>=8192+2048)
+    if(binsize>= BASIC_LEVEL_III_A_MAX_BINARY_SIZE)
     {
+        // warn because wouldn't work on very common Basic IIIA
+        LOGW() << "Warning: Binary file obviously too big for a 12kb sega BASIC IIIA SC/SG wave\n";
+    }
+
+    if(binsize>= BASIC_LEVEL_III_B_MAX_BINARY_SIZE)
+    {
+        // error because wouldnt work nowhere
         _ProgramLength=0;
-        throw runtime_error("Binary file obviously too big for a sega BASIC III SC/SG wave");
+        throw runtime_error("Binary file obviously too big even for a 24kb sega BASIC IIIB SC/SG wave");
     }
     _ProgramLength = (unsigned short)binsize;
     _ProgramStart = 0xA000; // would be happy to know a correct value. (discussion...)
@@ -805,6 +902,13 @@ int SC3KBasic::readAsmBin(std::istream &inputStream)
 
     $0000-$7FFF : ROM
     $8000-$BFFF : DRAM (first 16K) -> in the cartridge. 4x 4ko
+
+     page 14 of doc:
+iAfterZero
+    $8000->$97FF basic reserved ram
+       $8160 (2b) pointer to start of basic program
+        ... which should be : $9800
+
         $9808 -> start adress into a rem first line
 
     $C000-$FFFF : Work RAM (mirrored repeatedly every 2K) -> the 2K ram from motherboard !
@@ -900,6 +1004,13 @@ int SC3KBasic::writeWave(
 int SC3KBasic::writeBasic(std::ostream &outputStream)
 {
     outputStream << m_basicStream.str();
+    return 0;
+}
+//! will do if hasPostBinary()
+int SC3KBasic::writePostBinary(std::ostream &outputStream)
+{
+    if(m_postBinaryLength==0) throw runtime_error("no post binary to save.");
+    outputStream << m_postBinaryStream.rdbuf() ;
     return 0;
 }
 
@@ -1256,11 +1367,26 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
     bytes.clear();
     vector<unsigned char> programBin(1,KEYCODE_BASICPROGRAM); //= {0x17}; // id for chunk2
     int textline=1;
+    size_t iIncbinInLine = string::npos;
+    int nbIncBinRefs=0;
+    string sline;
+    string postbinfilename;
     while(m_basicStream.good())
     {
-        string sline;
+        sline.clear();
         getline(m_basicStream,sline);
         if(sline.size()==0) continue;
+        iIncbinInLine = findNoCase(sline,"incbin");
+        if(iIncbinInLine != string::npos)
+        {
+            postbinfilename = sline.substr(iIncbinInLine+6);
+            // then means end of program, it's a post binary
+            // incbin treated after loop
+            break;
+        }
+        // replace incbin refs by well sized &HXXXX, for later replacement.
+        nbIncBinRefs += strReplaceNoCase(sline,"%binref","&HXXXX");
+
         size_t il= 0;
         int nline=0;
         if(sline[0]<'0' || sline[0]>'9')
@@ -1297,7 +1423,7 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
                 string strfound;
                 unsigned short code = findKeyCode(sline,il,strfound);
                 if(code!=0)
-                {
+                {   
                     if(code<256)
                     {
                         linebytes.push_back((unsigned char)code);
@@ -1362,6 +1488,53 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
     } // end loop per line read.
     //
     programBin.push_back(0); // want a zero to say no more lines.
+
+    if(iIncbinInLine != string::npos )
+    {
+        // if basic ends with incbin directive, append extra binary after basic
+        // get file name
+        strTrim(postbinfilename);
+        cout << "include post binary file: " << postbinfilename << endl;
+        string abspath = m_sourceBasePath + "/" + postbinfilename;
+        ifstream pbinifs(abspath.c_str(),ios::binary|ios::in);
+        if(!pbinifs.good())
+        {
+            stringstream ss;
+            ss << "Can't read binary file:" << postbinfilename ;
+            throw runtime_error(ss.str());
+        }
+        pbinifs.seekg(0,istream::end);
+        size_t binsize = (size_t)pbinifs.tellg();
+        pbinifs.seekg(0,istream::beg);
+        if(binsize>= BASIC_LEVEL_III_A_MAX_BINARY_SIZE)
+        {
+            // warn because wouldn't work on very common Basic IIIA
+            LOGW() << "Warning: incbin binary file obviously too big for a 12kb sega BASIC IIIA SC/SG wave\n";
+        }
+        if(binsize >= BASIC_LEVEL_III_B_MAX_BINARY_SIZE )
+        {
+            runtime_error("incbin binary file obviously too big even for a 26kb sega BASIC IIIB SC/SG wave");
+        }
+        size_t iAfterZero = programBin.size();
+        programBin.resize(iAfterZero+binsize);
+        pbinifs.read((char*)&programBin[iAfterZero],binsize);
+
+        // resolve %binref incbin reference for call command to binary:
+
+        // OK value for Basic LevelIIIA/B and SK III
+#define BASIC_START 0x9800
+        int binaryStartAdress = BASIC_START + (int)iAfterZero -1;
+
+        if(nbIncBinRefs>0)
+        {
+            stringstream strrefs;
+            strrefs << "&H" << setfill('0') << setw(4) << right << hex << binaryStartAdress ;
+            string strref = strrefs.str();
+            replaceInBin(programBin,"&HXXXX",strref);
+        }
+        LOGI() << "appended post binary file of length: " << binsize << " after basic code." << endl;
+
+    }
 
     _ProgramLength = (int)programBin.size() -1;
 

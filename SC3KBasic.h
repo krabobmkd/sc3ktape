@@ -30,11 +30,22 @@ public:
     int readWave( std::istream &inputStream);
     //! will work in basic mode with writeWave()
     int readBasic(std::istream &inputStream);
-    //! will work in asm mode with writeWave()
+    //! -untested beta- will work in asm mode with writeWave()
     int readAsmBin(std::istream &inputStream);
 
     int writeBasic(std::ostream &outputStream);
     int writeWave(std::ostream &outputStream,std::string progName,int bitsPerSample=8, int freq=22050);
+
+    //! optional after writeBasic
+    inline bool hasPostBinary() const { return m_postBinaryLength>0; }
+    inline int postBinaryLength() const {return m_postBinaryLength; }
+    //! will do if hasPostBinary()
+    int writePostBinary(std::ostream &outputStream);
+
+    //! because of incbin feature
+    inline void setSourceBasePath(std::string basepath) {
+        m_sourceBasePath = basepath;
+    }
 
     /** optional use before writeBasic */
     void lineIndexToLabels();
@@ -51,10 +62,13 @@ protected:
     unsigned short _ProgramStart; // ASM only, where program is copy-loaded and started.
 
     std::stringstream m_basicStream;
+    std::stringstream m_postBinaryStream; // optional extra binary after basic
 
     std::vector< std::vector< unsigned char > > m_bytes;
 
     bool        m_isEuroAscii;
+    int         m_postBinaryLength;
+    std::string m_sourceBasePath;
 
     void basicStreamToBytes( std::vector< std::vector<unsigned char> > &bytes);
     void tapeWaveFromBytes(std::ostream &ofs,int bitsPerSamples=8,int wavefreq=22050);
