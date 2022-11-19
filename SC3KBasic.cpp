@@ -596,7 +596,6 @@ int SC3KBasic::readWave(std::istream &inputStream)
                     m_postBinaryStream.write((char*)&programBin[i+1],postbinlength);
                     m_postBinaryLength = postbinlength;
                 }
-           // cout << "basic end at byte: " << (i-1) << " when program end is: " << _ProgramLength << endl;
                 // means end of chunk !!!
                 break;
             }
