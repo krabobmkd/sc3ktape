@@ -1,31 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(sc3ktape LANGUAGES CXX)
+project(sc3k LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-#set(CMAKE_CXX_STANDARD 98)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-    add_executable(sc3ktape
-        main.cpp
-        log.cpp
-        log.h
-        SC3KBasic.cpp
-        SC3KBasic.h
-        SC3KSoundAndBytes.cpp
-        SC3KSoundAndBytes.h
-        SoundReader.cpp
-        SoundReader.h
-
-        SegaAsciiJpToUnicode.h
-    )
-
-    message(STATUS "              ________  __     __")
-    message(STATUS "  ______ ____ \\_____  \\|  | __/  |______  ______   ____ ")
-    message(STATUS " /  ____/ ___\\  _(__  <|  |/ \\   __\\__  \\ \\____ \\_/ __ \\")
-    message(STATUS " \\___ \\\\  \\___ /       |    < |  |  / __ \\|  |_> \\  ___/")
-    message(STATUS "/____  >\\___  /______  |__|_ \\|__| (____  |   __/ \\___  >")
-    message(STATUS "     \\/     \\/       \\/     \\/          \\/|__|        \\/")
-    message(STATUS " .oO Sega SC3000/SK1100 Tape-2-Basic-2-Tape Converter Oo.")
-    message(STATUS "   ")
+add_subdirectory(sc3ktape)
+add_subdirectory(sc3kpetscii)
