@@ -103,8 +103,28 @@ struct PetsciiFrame
 class SegasciiExporter
 {
 public:
-    void exportFrame(const PetsciiFrame &f, std::ostream &ofs)
+    void exportFrameToBasic(const PetsciiFrame &f, std::ostream &ofs)
     {
+        ofs << " screen 2,2:cls:cursor0,0\n";
+        // translate chars to print strings
+
+        // translate colors to vpoke & data
+/*
+VRAM 16k
+&H0000 mode 2 pattern generator table (6144b) -> le bitmap 256x192
+&H1800 CASE mode 1 (text mode) pattern generator table (2048b)
+       CASE mode 2: sprite generator table
+
+&H2000 mode 2 color table (6144) (4bit color on, 4 bit color off), per 8 pixels.
+&H3800 mode 2 "pattern name table" (768b, 32x24)
+&H3B00 Sprite attribute table 128b.
+&H3C00 text mode pattern name table (960b) -> text mode chars ! (6x8 pixels/char, 40*24 charx, 256x192)
+$28 ->40 colonnes
+
+ le charset petscii = 8*128 = 1kb
+
+
+*/
 
 
     }
@@ -147,7 +167,7 @@ int main(int argc, char *argv[])
         }
 
         SegasciiExporter exporter;
-        exporter.exportFrame(f,ofs);
+        exporter.exportFrameToBasic(f,ofs);
 
     } catch(const std::exception &e)
     {

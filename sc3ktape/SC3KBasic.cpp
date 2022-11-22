@@ -53,7 +53,7 @@ upair BasicKeywords[]=
 {
     // note: 0x80 means: id on 2 bytes.
     {0x82,"list"},
-    {0x83,"llist"},
+    {0x83,"llist"}, // on printer
     {0x84,"auto"},
     {0x85,"delete"},
     {0x86,"run"},
@@ -108,7 +108,7 @@ upair BasicKeywords[]=
     {0xb4,"position"},
     {0xb5,"hcopy"},
     {0xb6,"sprite"},
-    {0xb7,"pattern"},
+    {0xb7,"pattern"}, // call written as patternc are "pattern character"
     {0xb8,"circle"},
     {0xb9,"bcircle"},
     {0xba,"mag"},
@@ -800,7 +800,7 @@ int SC3KBasic::readBasic(std::istream &ifs)
 
     string line;
     getline(ifs,line);
-    while(ifs.peek() != EOF )
+    while(true)
     {
         if(line.length()==0 || line[0]=='#' )
         {
@@ -839,6 +839,7 @@ int SC3KBasic::readBasic(std::istream &ifs)
             // source already using line numbers
             m_basicStream << line << "\n";
         }
+        if(ifs.peek() == EOF) break;
         getline(ifs,line);
     }
     // need another pass to replace labels if needed.
@@ -1529,6 +1530,11 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
             stringstream strrefs;
             strrefs << "&H" << setfill('0') << setw(4) << right << hex << binaryStartAdress ;
             string strref = strrefs.str();
+            std::transform(strref.begin(), strref.end(), strref.begin(),
+                [](unsigned char c){ return std::toupper(c); });
+            // value must be known
+            LOGI() << " %BINREF in code is replaced by " << strref << " which is the post binary start adress\n";
+            LOGI() << " binary should be relocated to this value.\n";
             replaceInBin(programBin,"&HXXXX",strref);
         }
         LOGI() << "appended post binary file of length: " << binsize << " after basic code." << endl;
