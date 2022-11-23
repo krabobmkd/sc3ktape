@@ -255,6 +255,57 @@ void strTrim(std::string &s) {
     i = s.find_first_not_of(" \n\r\t");
     s = s.substr(i);
 }
+// get unicode char at il, advance il. Throw if unvalid
+unsigned int getUtf8Char(const std::string &line,size_t &il)
+{
+    string er = "utf8 bound, source not UTF8";
+    int l = (int) line.length();
+    unsigned int unicode=0;
+    if(il>=l)
+    {
+        throw runtime_error(er);
+    }
+    unsigned int c = (unsigned char)line[il];
+    il++;
+    if(c<0x80) {
+        return c;
+    }
+    if(il>=l)
+    {
+        throw runtime_error(er);
+    }
+    unsigned int c2 = (unsigned char)line[il];
+    il++;
+    if((c & 0b11100000) == 0b11000000)
+    {
+        // 2 bytes mode, for 11b
+        return ((c & 0b00011111)<<6 ) | (c2 & 0b00111111);
+    }
+    if(il>=l)
+    {
+        throw runtime_error(er);
+    }
+    unsigned int c3 = (unsigned char)line[il];
+    il++;
+    if((c & 0b11110000) == 0b11100000)
+    {
+        // 3 bytes mode, for 16b
+        return ((c & 0b00001111)<<12 ) | ((c2 & 0b00111111)<<6) | (c3 & 0b00111111);
+    }
+    if(il>=l)
+    {
+        throw runtime_error(er);
+    }
+    unsigned int c4 = (unsigned char)line[il];
+    il++;
+    if((c & 0b11111000) == 0b11110000)
+    {
+        // 4 bytes mode, for 3+3x6= 21b
+        return ((c & 0b00000111)<<18 ) | ((c2 & 0b00111111)<<12) | ((c3 & 0b00111111)<<6) | (c4 & 0b00111111);
+    }
+    throw runtime_error(er+"... like 5 bytes UTF??");
+}
+
 unsigned short findKeyCode(const std::string &v, size_t il, string &strfound)
 {
     strfound="";
@@ -299,11 +350,11 @@ std::string findCodeKey(unsigned short c)
     return "";
 }
 
-std::string Utf8ToSegascii(std::string ustr)
-{
-    std::string sc;
 
+unsigned char unicodeCharToSegaScii(unsigned int unicode)
+{
     static map<unsigned int, unsigned char> uniToScMap;
+
     if(uniToScMap.size() ==0)
     {
         for(int i=0;i<256;i++)
@@ -316,6 +367,22 @@ std::string Utf8ToSegascii(std::string ustr)
             uniToScMap[tSegaAsciiEuToUnicode[i]]=(unsigned char)i;
         }
     }
+
+    if(uniToScMap.find(unicode) != uniToScMap.end())
+    {
+        return (unsigned char) uniToScMap[unicode];
+
+    }
+   // if unicode is not supported by segascii, set a space.
+    return (unsigned char)' ';
+}
+
+std::string Utf8ToSegascii(std::string ustr)
+{
+    std::string sc;
+
+
+
 
     // first loop check chars encoding
     size_t l = ustr.length();
@@ -367,14 +434,8 @@ std::string Utf8ToSegascii(std::string ustr)
 
             }
             // then...
-            if(uniToScMap.find(cc) != uniToScMap.end())
-            {
-                unsigned char csc = uniToScMap[cc];
-                sc +=csc;
-            } else
-            {   // if unicode is not supported by segascii, set a space.
-                 sc+= ' ';
-            }
+            unsigned char sgsccc = unicodeCharToSegaScii(cc);
+            sc += sgsccc;
 
         } else
         {
@@ -805,6 +866,7 @@ int SC3KBasic::readBasic(std::istream &ifs)
         if(line.length()==0 || line[0]=='#' )
         {
             getline(ifs,line);
+            if(ifs.peek() == EOF) break;
             continue;
         }
         if((line[0]< '0' || line[0]> '9') && !renumMode )
@@ -1444,10 +1506,21 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
                   //never reached  if(c=='\n') parseMode = epm_Code;
                 }
             } else{
-                //
-                char c =sline[il];
-                il++;
-                if(c=='%') // our enconding on our side.
+                // here, we are in text quotes or remark, and use full SegaScii and not opcodes.
+                {
+                    unsigned int unicode = getUtf8Char(sline,il);
+                    if(unicode==(unsigned int)'"' && parseMode == epm_Quote)  parseMode=epm_Code;
+                    unsigned char cc = unicodeCharToSegaScii(unicode);
+                    linebytes.push_back(cc);
+
+                }
+
+
+              //  unsigned char c =(unsigned char)sline[il];;
+               // il++;
+ /*
+ note used for the moment, source must be UTF8 and unicodes chars correspond to their SegaScii equivalent;
+                  if(c=='%') // our encoding on our side.
                 {
                     if(il<sline.length()-1 && sline[il+1]=='%')
                     {
@@ -1465,11 +1538,8 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
                         linebytes.push_back((unsigned char)v);
                         il+=2;
                     }
-                } else
-                {
-                    if(c=='"' && parseMode == epm_Quote)  parseMode=epm_Code;
-                    linebytes.push_back((unsigned char)c);
-                }
+                } else*/
+
             }
 
         }
