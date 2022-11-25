@@ -249,12 +249,25 @@ void replaceInBin( vector<unsigned char> &bin,const std::string &stra,const std:
         i+= stra.length();
     }
 }
-void strTrim(std::string &s) {
-    size_t i = s.find_last_not_of(" \n\r\t");
-    if( i != string::npos ) s = s.substr(0,i+1);
-    i = s.find_first_not_of(" \n\r\t");
-    s = s.substr(i);
+void strTrimEnd(std::string &s) {
+    if(s.length()==0) return;
+
+    size_t i = s.find_last_not_of(" \t\n\r");
+    if(i==0 || i==string::npos) {s.clear(); return; }
+    s = s.substr(0,i+1);
 }
+void strTrimStart(std::string &s) {
+     if(s.length()==0) return;
+    size_t i = s.find_first_not_of(" \n\r\t");
+    if( i != string::npos ) s = s.substr(i);
+
+}
+void strTrim(std::string &s) {
+     if(s.length()==0) return;
+    strTrimStart(s);
+   strTrimEnd(s);
+}
+
 // get unicode char at il, advance il. Throw if unvalid
 unsigned int getUtf8Char(const std::string &line,size_t &il)
 {
@@ -838,8 +851,8 @@ int SC3KBasic::readBasic(std::istream &ifs)
     ifs.seekg(0,ios::beg);
     // first 3 bytes may be UTF-8 BOM
     {
-        char bom[3]={0,0,0};
-        ifs.read(bom,3);
+        unsigned char bom[3]={0,0,0};
+        ifs.read((char*)bom,3);
         if(bom[0]!=0xEF || bom[1]!=0xBB || bom[2]!=0xBF)
         {  // if not bom restart, if bom continue at 3.
             ifs.seekg(0,ios::beg);
@@ -861,26 +874,29 @@ int SC3KBasic::readBasic(std::istream &ifs)
 
     string line;
     getline(ifs,line);
+    strTrimEnd(line);
     while(true)
     {
-        if(line.length()==0 || line[0]=='#' )
+        if(line.length()==0 || line[0]=='#'  )
         {
-            getline(ifs,line);
             if(ifs.peek() == EOF) break;
+            getline(ifs,line);
+            strTrimEnd(line);
             continue;
         }
+        cout << "line:" << line << ":"<< endl;
         if((line[0]< '0' || line[0]> '9') && !renumMode )
         {
-            cout << "no number found for line, use renum mode." << endl;
+            cout << (int)line[0] <<   "no number found for line, use renum mode." << endl;
             renumMode = true;
         }
-        line.erase(line.find_last_not_of(" \n\r")+1);
+
         if(renumMode)
         {
             if(line[0] == '\t' || line[0] == ' ')
             {   // code line
                 string codeline = line; //.substr(1);
-                strTrim(codeline);
+                strTrimStart(codeline);
                 if(codeline.length()>0)
                 {
                     // replace label later !
@@ -901,8 +917,9 @@ int SC3KBasic::readBasic(std::istream &ifs)
             // source already using line numbers
             m_basicStream << line << "\n";
         }
-        if(ifs.peek() == EOF) break;
+        if(ifs.peek() == EOF ) break;
         getline(ifs,line);
+        strTrimEnd(line);
     }
     // need another pass to replace labels if needed.
     if(labelToLine.size()>0 && renumMode)
@@ -1033,7 +1050,7 @@ iAfterZero
     m_bytes.push_back(programHeader);
     m_bytes.push_back(programBin);
 
-
+    return 0;
 }
 
 int SC3KBasic::writeWave(
@@ -1262,6 +1279,11 @@ void SC3KBasic::lineIndexToLabels()
         }
         //  just tab the line without line number
         ns << '\t' << p.second << '\n';
+        // one more line after return
+        if(p.second.find("return")==p.second.length()-6 )
+         {
+            ns << '\n';
+         }
    }
    //was:
    //m_basicStream.swap(ns);

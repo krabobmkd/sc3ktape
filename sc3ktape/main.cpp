@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     if(argc<2)
     {
 
-        LOGI()<< ANSICOL_YELLOW <<"               ________  __     __\n";
+        LOGI()<< ANSICOL_YELLOW <<"\n               ________  __     __\n";
         LOGI()<< ANSICOL_YELLOW <<"   ______ ____ \\_____  \\|  | __/  |______  ______   ____ \n";
         LOGI()<< ANSICOL_YELLOW <<"  /  ____/ ___\\  _(__  <|  |/ \\   __\\__  \\ \\____ \\_/ __ \\\n";
         LOGI()<< ANSICOL_YELLOW <<"  \\___ \\\\  \\___ /       |    < |  |  / __ \\|  |_> \\  ___/\n";
