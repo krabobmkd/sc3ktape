@@ -32,6 +32,7 @@ ___________                         ________      __________               .__
 #include "SoundReader.h"
 #include <iostream>
 #include <fstream>
+#include <map>
 #include "log.h"
  using namespace std;
 
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
         LOGI()<< ANSICOL_ORA <<"      \\/     \\/       \\/     \\/          \\/|__|        \\/\n";
         LOGI()<< ANSICOL_DEF <<"\n";
 
-        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9 2022\n";
+        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9.1 2022\n";
         LOGI() << "   >sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic\n";
         LOGI() << "   >sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave\n";
         LOGI() << "   >sc3ktape file.bin -o file.wave [options] convert asm binary to wave\n";
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
         LOGI() << "   -tolabel: replace lines number by tabs and generate labels (usable with b2t).\n";
         LOGI() << " basic to tape options:\n";
         LOGI() << "   -nNAME: give header prog file name for tape wave header.\n";
+        LOGI() << "   -tobdbin: only output the basic memory dump that can fit $9800 in emus.\n";
         LOGI() << " Input waves can use any frequencies (22050Hz,44100Hz), must be mono.\n";
         LOGI() << " Ouput waves are always 8bit/ 22050Hz, which is enough for the hardware.\n";
         LOGI() << endl;
@@ -87,9 +89,11 @@ int main(int argc, char *argv[])
     //  - - - collect options - - - - -
     bool jpCharset=false;
     bool lineIndexToLabels=false;
+    bool toDumpBin = false;
 
     string programName=endsWithbin?"BINARY":"BASIC"; // default.
 
+    map<string,string> preprocs_names;
     //   bool useUtf8Encoding=true;
     string outputfile;
     for(int i=2;i<argc;i++)
@@ -103,6 +107,19 @@ int main(int argc, char *argv[])
                 outputfile = argv[i];
             }
         }
+        if(strarg.find("-D")==0)
+        {
+            string varValue;
+            string varname = strarg.substr(2);
+            size_t j = varname.find("=");
+            if(j != string::npos)
+            {
+                varValue = varname.substr(j+1);
+                varname = varname.substr(0,j);
+            }
+            preprocs_names[varname] = varValue;
+        }
+
         if(strarg.find("-n") == 0)
         {
             programName = strarg.substr(2);
@@ -112,7 +129,7 @@ int main(int argc, char *argv[])
             lineIndexToLabels = true;
         }
         if(strarg == "-jp") jpCharset=true;
-
+        if(strarg == "-tobdbin") toDumpBin=true;
     }
 
     try {
@@ -148,10 +165,12 @@ int main(int argc, char *argv[])
             }
     } else
     {
+        // basic or basic + asm , to tape wave or to basic dumpbin.
         SC3KBasic wr;
         wr.setSourceBasePath(basepath);
         if(endsWithbin)
-        {   // assembler to tape wave case
+        {   // assembler to direct asm tape wave case
+            // EXPERIMENTAL, UNTESTED, would use file identifier $17/$27
             wr.readAsmBin(inputstream);
 
             std::string waveVersion = inputfile + ".wave";
@@ -168,16 +187,35 @@ int main(int argc, char *argv[])
 
             // - - - - input is basic.
             wr.setIsEuroAscii(!jpCharset);
+            if(preprocs_names.size()>0) wr.setPreProcNames(preprocs_names);
 
             wr.readBasic(inputstream);
-            std::string waveVersion = inputfile + ".wave";
 
-            ofstream outputStream(waveVersion.c_str(), ios::binary);
-            if(!outputStream.good()) {
-                throw runtime_error(string("can't save to : ")+waveVersion);
+            if(toDumpBin)
+            {
+                std::string bdbinVersion = inputfile + ".bdbin";
+                if(outputfile.size()>0) bdbinVersion = outputfile;
+
+                ofstream outputStream(bdbinVersion.c_str(), ios::binary);
+                if(!outputStream.good()) {
+                    throw runtime_error(string("can't save to : ")+bdbinVersion);
+                }
+
+                wr.writeDumpBin(outputStream);
+                LOGI() << "Basic Exported To Dump bin for $9800 : " << bdbinVersion << endl;
+            } else
+            {
+                std::string waveVersion = inputfile + ".wave";
+                if(outputfile.size()>0) waveVersion = outputfile;
+
+                ofstream outputStream(waveVersion.c_str(), ios::binary);
+                if(!outputStream.good()) {
+                    throw runtime_error(string("can't save to : ")+waveVersion);
+                }
+
+                wr.writeWave(outputStream,programName);
+                LOGI() << "Basic Exported To Tape Wave: " << waveVersion << endl;
             }
-            wr.writeWave(outputStream,programName);
-            LOGI() << "Basic Exported To Tape Wave: " << waveVersion << endl;
         }
     }
     } catch(const std::exception &e)

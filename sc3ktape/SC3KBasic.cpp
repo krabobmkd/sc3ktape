@@ -216,6 +216,26 @@ int strReplaceNoCase(std::string &s,const std::string &bef,const std::string &af
     s = ns;
     return nbdone;
 }
+int strReplace(std::string &s,const std::string &bef,const std::string &aft)
+{
+    size_t i=0;
+    size_t in = s.find(bef,i);
+    if(in == string::npos) return 0;
+    string ns;
+    int nbdone=0;
+    while(in != string::npos)
+    {
+        ns += s.substr(i,in-i); // same chain between
+        ns +=aft;
+        nbdone++;
+        i = in + bef.length();
+        in = s.find(bef,i);
+    }
+    ns += s.substr(i,in-i); // till end
+
+    s = ns;
+    return nbdone;
+}
 // stra strab must be same size.
 void replaceInBin( vector<unsigned char> &bin,const std::string &stra,const std::string &strb)
 {
@@ -379,6 +399,19 @@ unsigned char unicodeCharToSegaScii(unsigned int unicode)
         {
             uniToScMap[tSegaAsciiEuToUnicode[i]]=(unsigned char)i;
         }
+        // some other unicode symbol may fit a sesgascii one.
+/*
+const sUnicodeToXscii tExtraUnicodeToSegascii[]=
+{
+    {(unsigned int)'_',0x99},
+    {(unsigned int)'\\',0x94},
+};
+*/
+        for(int i=0;i<sizeof(tExtraUnicodeToSegascii)/sizeof(sUnicodeToXscii);i++)
+        {
+            const sUnicodeToXscii &u2s = tExtraUnicodeToSegascii[i];
+            uniToScMap[u2s._u] = u2s._c;
+        }
     }
 
     if(uniToScMap.find(unicode) != uniToScMap.end())
@@ -386,6 +419,7 @@ unsigned char unicodeCharToSegaScii(unsigned int unicode)
         return (unsigned char) uniToScMap[unicode];
 
     }
+
    // if unicode is not supported by segascii, set a space.
     return (unsigned char)' ';
 }
@@ -921,14 +955,24 @@ int SC3KBasic::readBasic(std::istream &ifs)
         getline(ifs,line);
         strTrimEnd(line);
     }
-    // need another pass to replace labels if needed.
-    if(labelToLine.size()>0 && renumMode)
+    // may need another pass to replace labels if needed, or apply pre proc names.
+    bool doRenum = (labelToLine.size()>0 && renumMode);
+    if( doRenum || m_preproc_names.size()>0
+            )
     {
         stringstream sn;
         getline(m_basicStream,line);
         while(line.length()>0)
         {
-            replaceLabelsByLine(line,labelToLine);
+            if(doRenum) replaceLabelsByLine(line,labelToLine);
+            // may preproc
+            map<string,string>::const_iterator cit = m_preproc_names.begin();
+            while(cit != m_preproc_names.end() )
+            {
+                string rname = string("$(")+(*cit).first+")";
+                strReplace(line,rname,(*cit).second);
+                cit++;
+            }
             sn << line << "\n";
             getline(m_basicStream,line);
         }
@@ -1077,6 +1121,25 @@ int SC3KBasic::writeWave(
     }
 
     tapeWaveFromBytes(outputStream,bitsPerSample,freq);
+    return 0;
+}
+int SC3KBasic::writeDumpBin(std::ostream &outputStream)
+{
+    // basic should be read, and m_bytes should contains the header and the program chunk.
+    // here, we are only interested to have a bin file with just the program chunk, as it is.
+    if(m_bytes.size()<2)
+    {
+        throw runtime_error("no program information found");
+    }
+    const vector<unsigned char> &programChunk = m_bytes[1];
+    // should be at least one line...
+    if(programChunk.size()<6)
+    {
+        throw runtime_error("program information invalid");
+    }
+    // really just that: the opcode compressed version, may contain optional data.
+    // note jump first char which is just the "17" is.
+    outputStream.write((char *)(programChunk.data()+1), programChunk.size()-1);
     return 0;
 }
 

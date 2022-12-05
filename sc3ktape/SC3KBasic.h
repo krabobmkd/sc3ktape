@@ -16,6 +16,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <map>
 
 /** \class SC3KBasic
     Manage basic code, convertion to bytes,
@@ -35,6 +36,7 @@ public:
 
     int writeBasic(std::ostream &outputStream);
     int writeWave(std::ostream &outputStream,std::string progName,int bitsPerSample=8, int freq=22050);
+    int writeDumpBin(std::ostream &outputStream);
 
     //! optional after writeBasic
     inline bool hasPostBinary() const { return m_postBinaryLength>0; }
@@ -54,6 +56,11 @@ public:
     inline void setIsEuroAscii(bool isEuroAscii) {
         m_isEuroAscii = isEuroAscii;
     }
+
+    inline void setPreProcNames(const std::map<std::string,std::string> &names) {
+        m_preproc_names = names;
+    }
+
 protected:
     // from first chunk header:
     unsigned char _keyCode; //0x16=basic 0x26=assembler.
@@ -69,6 +76,8 @@ protected:
     bool        m_isEuroAscii;
     int         m_postBinaryLength;
     std::string m_sourceBasePath;
+
+    std::map<std::string,std::string> m_preproc_names;
 
     void basicStreamToBytes( std::vector< std::vector<unsigned char> > &bytes);
     void tapeWaveFromBytes(std::ostream &ofs,int bitsPerSamples=8,int wavefreq=22050);
