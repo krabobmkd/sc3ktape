@@ -13,6 +13,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
         ../sc3kutils/log.h
         ../sc3kutils/SegaAsciiJpToUnicode.h
         ../sc3kutils/PetsciiToUnicode.h
+		../sc3kutils/TMS9918State.h
+        ../sc3kutils/TMS9918State.cpp
     )
 
 # ${JSONCPP_LIBRARIES}

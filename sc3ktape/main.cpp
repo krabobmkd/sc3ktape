@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         LOGI()<< ANSICOL_ORA <<"      \\/     \\/       \\/     \\/          \\/|__|        \\/\n";
         LOGI()<< ANSICOL_DEF <<"\n";
 
-        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9.1 2022\n";
+        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9.1c 2022\n";
         LOGI() << "   >sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic\n";
         LOGI() << "   >sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave\n";
         LOGI() << "   >sc3ktape file.bin -o file.wave [options] convert asm binary to wave\n";

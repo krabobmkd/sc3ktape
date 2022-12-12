@@ -36,6 +36,26 @@
  using namespace std;
 
 
+// build a compressed set of petscii...
+struct PetsciiSet
+{
+    std::vector<uint8_t> _charsetBitmap; // max 256*8, shared by frame
+
+
+    struct Frame
+    {
+        int _w,_h; // in 8x8, max 32x24
+        int _x0,_y0; // in screen space
+        std::vector<uint8_t> _bitmap; // index to charset of set
+        std::vector<uint8_t> _colors; // 4b color.
+    };
+
+
+    std::vector<Frame> _frames;
+
+};
+
+
 struct PetsciiFrame
 {
     int _width=0,_height=0;

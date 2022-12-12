@@ -59,22 +59,34 @@ banks 1
 .endm
 
 ;.bank 1 slot 1
-	.org $980F
+	.org $981B
 testd:
 main:
 	di
 
+    ; set up VDP registers
+
+    ld hl,VDPInitData
+    ld b,VDPInitDataEnd-VDPInitData
+    ld c,VDPControl
+    otir	
+ 
     ; load tiles (Background)
 ;    SetVDPAddress $0000 | VRAMWrite
-;    ld hl, FiftyTiles
-;    ld de, FiftyTilesSize
+;    ld hl,Bitmap
+;    ld de,BitmapEnd-Bitmap
 ;    CopyToVDP
+    SetVDPAddress $0000 | VRAMWrite
+	ld hl,Bitmap
+	ld b,BitmapEnd-Bitmap
+	ld c,VDPData
+	otir
 
     ; load tilemap (Background)
-    SetVDPAddress $3800 | VRAMWrite
-    ld hl,testdata
-    ld de,dataend-testdata
-    CopyToVDP
+ ;   SetVDPAddress $3800 | VRAMWrite
+ ;   ld hl,testdata
+ ;   ld de,dataend-testdata
+ ;   CopyToVDP
 
 
 	ei
@@ -86,8 +98,33 @@ main:
 ;other:
 ;	ret
 ; - - - - -
+;reg0: 2:mode2
+;reg1
+; 1110 0000 <-graphics (16k,enabledislay,enableframeinterupt,9918mode1)
+;						(mode3,noeffect,large16x16sprite,stretchd sprites )
+; 1110 0010
+; reg2 name table base adress 4b
+; reg2 sur elevato action switch 0E/0F pour du double buff ?
+
+;reg7 overscan & backdrop color: normal si tjrs different.
+
+;meka for screen2: 02 E0 0E FF 03 76 03 05   00 00 FF
+; meka bank panic: 02 E2 0E FF 03 76 03 00   00 00 FF
+;                                       F0
+;                           FF 03 7F   <-exerion chaneg reg5(sprite attribs base adr)
+;elevatoraction: 02 E2 screen title, 02 82 when screen switch (switch off display & screen interupt)
+VDPInitData:
+.db $02,$80
+.db $E2,$81
+.db $56,$87
+;.db $14,$80,$00,$81,$ff,$82,$ff,$85,$ff,$86,$ff,$87,$00,$88,$00,$89,$ff,$8a
+VDPInitDataEnd:
+Bitmap:
+.db $98,$76,$54
+BitmapEnd:
+
 testdata:
-	.db "CAN WE"
+	.db "CAN WO"
 dataend:
 	.db $10
 	.db $11

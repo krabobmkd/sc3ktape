@@ -23,10 +23,12 @@ $(PROGNAME).wav: $(PROGNAME).bin
 
 $(MEKASTATE): $(PROGNAME).bdbin
 	# copy bdbin inside Meka emu's state in a basiscLevelIII saved state.
-	filepatch $@ origstate.S00 $(PROGNAME).bdbin 6257
-	
+	#OK Meka Linux:
+	cat $(PROGNAME).bdbin | dd of=origstateLINUX.S00 bs=1 seek=6257 conv=notrunc
+	cp origstateLINUX.S00 ~/SegaSC3000/Meka/meka/meka/Saves/Sega_BASIC_Level_3_V1_SC-3000.S00
+	#OK Meka Windows	
+	#cat $(PROGNAME).bdbin | dd of=origstate.S00 bs=1 seek=6253 conv=notrunc	
 
-# ~/SegaSC3000/Meka/meka/meka/Saves/Sega\ BASIC\ Level\ 3\ V1\ \(SC-3000\).S00
 clean: 
 	rm -rf *.bin *.o *.bdbin wlalinkfile
 #

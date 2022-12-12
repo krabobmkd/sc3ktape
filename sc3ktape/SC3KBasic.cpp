@@ -1671,14 +1671,16 @@ void SC3KBasic::basicStreamToBytes(std::vector< std::vector<unsigned char> > &by
             runtime_error("incbin binary file obviously too big even for a 26kb sega BASIC IIIB SC/SG wave");
         }
         size_t iAfterZero = programBin.size();
-        programBin.resize(iAfterZero+binsize);
-        pbinifs.read((char*)&programBin[iAfterZero],binsize);
+        programBin.resize(iAfterZero+2+binsize);
+        programBin[iAfterZero]=0;
+        programBin[iAfterZero+1]=0;
+        pbinifs.read((char*)&programBin[iAfterZero+2],binsize);
 
         // resolve %binref incbin reference for call command to binary:
 
         // OK value for Basic LevelIIIA/B and SK III
 #define BASIC_START 0x9800
-        int binaryStartAdress = BASIC_START + (int)iAfterZero -1;
+        int binaryStartAdress = BASIC_START + (int)iAfterZero+2 -1;
 
         if(nbIncBinRefs>0)
         {
