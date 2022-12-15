@@ -29,7 +29,7 @@ TMS9918State::TMS9918State()
 
 }
 
-void TMS9918State::setMode2Default()
+void TMS9918State::setMode_Graphics2Default()
 {
     //meka for screen2: 02 E0 0E FF 03 76 03 05   00 00 FF
     _regs._0._External =0;
@@ -52,7 +52,7 @@ void TMS9918State::setMode2Default()
     // $3C00->$3FC0 les char du mode texte.
     _regs._2._NameTableBaseAdress = 0x0e; //* 0x400 = $3800 (size=$300) -> end $3B00
     _regs._3._ColorTableBaseAdress = 0xff; // * 0x40  = $3FC0
-    _regs._4._PatternGeneratorBaseAdress = 0x03; // * 0x800 = $1800
+    _regs._4._PatternGeneratorBaseAdress = 0x03; // * 0x800 = $1800 (just in mode1 ?)
     _regs._5._SpriteAttribTableBaseAdress = 0x76; // * 0x80 = 3B00
     _regs._6._SpritePatternGeneratorBaseAdress = 0x03; // * 0x800 = $1800
 

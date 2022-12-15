@@ -9,7 +9,7 @@ class TMS9918State
 public:
     TMS9918State();
 
-    void setMode2Default();
+    void setMode_Graphics2Default();
     void updateRender();
 
     inline int pixelWidth() const {
@@ -70,7 +70,7 @@ protected:
         } _3;
         struct {
             uint8_t _:5;
-            uint8_t _PatternGeneratorBaseAdress:3; //* 0x800
+            uint8_t _PatternGeneratorBaseAdress:3; //* 0x800 (*2kb), for gfxmode1
         } _4;
         struct {
             uint8_t _:1;

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 //    }
 
     TMS9918State tms;
-    tms.setMode2Default();
+    tms.setMode_Graphics2Default();
     tms.updateRender();
 
 
