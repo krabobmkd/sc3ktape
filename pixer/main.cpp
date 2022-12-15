@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
     TMS9918State tms;
     tms.setMode2Default();
-    tms.updateRender();
+    tms.updateRender(); // would alloc buffers
 
 
     SDL_Window * window=nullptr;
@@ -65,17 +65,37 @@ int main(int argc, char *argv[])
         renderer = SDL_CreateRenderer(window, -1, 0);
         if(!renderer) throw runtime_error("no window");
 
-        SDL_Surface* SDL_CreateRGBSurfaceWithFormat
-            (Uint32 flags, int width, int height, int depth, Uint32 format);
-
-        tmsImage = SDL_CreateRGBSurfaceWithFormat
-                ( 0,//Uint32 flags,
-                 tms.pixelWidth(),//int width,
-                 tms.pixelHeight(),//int height,
-                 32, // int depth,
-                 SDL_PIXELFORMAT_ABGR8888
-                  //Uint32 format
-                  );
+//        inline const uint8_t *pixelRGBA()
+          tmsImage = SDL_CreateRGBSurfaceFrom(
+                    (void *)tms.pixelRGBA(), //void *pixels,
+                    tms.pixelWidth(), // int width,
+                    tms.pixelHeight(), //int height,
+                    32, //int depth,
+                    tms.pixelWidth()*4, //int pitch,
+                    0xff000000,// Uint32 Rmask,
+                    0x00ff0000,
+                    0x0000ff00,//Uint32 Bmask,
+                    0x000000ff//Uint32 Amask
+                      );
+        /*
+        SDL_Surface* SDL_CreateRGBSurfaceFrom(void *pixels,
+                                              int width,
+                                              int height,
+                                              int depth,
+                                              int pitch,
+                                              Uint32 Rmask,
+                                              Uint32 Gmask,
+                                              Uint32 Bmask,
+                                              Uint32 Amask);
+    */
+//        tmsImage = SDL_CreateRGBSurfaceWithFormat
+//                ( 0,//Uint32 flags,
+//                 tms.pixelWidth(),//int width,
+//                 tms.pixelHeight(),//int height,
+//                 32, // int depth,
+//                 SDL_PIXELFORMAT_RGBA8888
+//                  //Uint32 format
+//                  );
 
         // SDL_PIXELFORMAT_RGBA8888
                 //SDL_LoadBMP("image.bmp");
@@ -83,7 +103,12 @@ int main(int argc, char *argv[])
 
         while (!quit)
         {
+           // menu.draw(screen.getSurface());
+            SDL_Flip(screen.getSurface());
+            SDL_Delay(10);
+
             SDL_WaitEvent(&event);
+
 
             switch (event.type)
             {
@@ -91,6 +116,22 @@ int main(int argc, char *argv[])
                 quit = true;
                 break;
             }
+            /*
+       while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                shouldQuit = true;
+            }
+            else if (event.type == SDL_KEYUP)
+            {
+                if (event.key.keysym.sym == SDLK_q)
+                {
+                    shouldQuit = true;
+                }
+            }
+        }
+*/
         }
 
 
@@ -102,7 +143,7 @@ int main(int argc, char *argv[])
     }
 
     if(texture) SDL_DestroyTexture(texture);
-    if(image) SDL_FreeSurface(image);
+    if(tmsImage) SDL_FreeSurface(tmsImage); //need tms to be delete after
     if(renderer) SDL_DestroyRenderer(renderer);
     if(window) SDL_DestroyWindow(window);
 
