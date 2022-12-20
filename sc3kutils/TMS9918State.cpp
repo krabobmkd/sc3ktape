@@ -9,21 +9,21 @@ TMS9918State::TMS9918State()
     ,_pixelHeight(0)
 {
     _paletteRGBA = {
-        0xff000000,
-        0xff010101,
-        0xff3eb849,
-        0xff74d07d,
-        0xff5955e0,
-        0xff8076f1,
-        0xffb95e51,
-        0xff65dbef,
-        0xffdb6559,
-        0xffff897d,
-        0xffccc35e,
-        0xffded087,
-        0xff3aa241,
-        0xffb766b5,
-        0xffcccccc,
+        0x000000ff,
+        0x010101ff,
+        0x49b83eff,
+        0x7dd074ff,
+        0xe05559ff,
+        0xf17680ff,
+        0x515eb9ff,
+        0xefdb65ff,
+        0x5965dbff,
+        0x7d89ffff,
+        0x5ec3fcff,
+        0x87d0deff,
+        0x41a23aff,
+        0xb566b7ff,
+        0xccccccff,
         0xffffffff,
     };
 
@@ -110,7 +110,7 @@ void TMS9918State::updateRender_Mode2()
 
     for(uint16_t y=0;y<_pixelHeight ; y++)
     {
-        uint16_t yl =y&3;
+        uint16_t yl =y&7;
         uint16_t yc =y>>3;
         uint16_t screenBmShift = (yc>>3)<<11; // runs 0,1,2 256*8 each , so 0,2k,4k
         for(uint16_t xc=0;xc<_pixelWidth>>3 ; xc++)
@@ -119,7 +119,8 @@ void TMS9918State::updateRender_Mode2()
             uint16_t n = (uint16_t) _vmem[nameTableBase+xc+(yc<<5)]; // the char id that point the screen Bm
             uint8_t bm = _vmem[screenBmShift+(n<<3)+yl]; // 8 2c pixels
             // get the 2 colors not using tiling but yet char per char
-            uint8_t cl = _vmem[0x2000+((xc+(yc<<5))<<8)+yl];
+           // uint8_t cl = _vmem[0x2000+((xc+(yc<<5))<<3)+yl];
+            uint8_t cl = _vmem[0x2000+screenBmShift+(n<<3)+yl];
             uint8_t bgc = cl>>4;
             if(bgc==0) bgc = bgColor;
             uint8_t fgc = cl & 0x0f;
@@ -130,6 +131,7 @@ void TMS9918State::updateRender_Mode2()
                 uint8_t c = (bm&128)?fgc:bgc;
                 *pwr++ = c;
                 *pwr32++ = _paletteRGBA[c];
+
                 bm<<=1;
             }
         }

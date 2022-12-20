@@ -6,7 +6,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(WIN32)
    # set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};../SDL2-2.26.1/cmake")
-   include(../SDL2-2.26.1/cmake/sdl2-config.cmake)
+   include(../../SDL2-2.26.1/cmake/sdl2-config.cmake)
 
 else()
        find_package(SDL2 REQUIRED)

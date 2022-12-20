@@ -22,8 +22,11 @@ public:
         return _renderedBitmap32.data();
     }
 
-
     const std::vector<uint32_t> &paletteRGBA() const { return _paletteRGBA; }
+    // - - - - - -
+    inline void vpoke(uint16_t a,uint8_t v) {
+        _vmem[a & 0x3fff]=v;
+    }
 
     // - - - - -
     inline uint16_t adress_NameTable() {
