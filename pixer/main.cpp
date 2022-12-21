@@ -18,8 +18,11 @@
 #include <vector>
 
 #include <SDL.h>
+#include <SDL_image.h>
 
 #include "TMS9918State.h"
+#include "TMS9918_SC2Loader.h"
+#include "TMS9918_SC3KExport.h"
 
 #include "log.h"
 //#include <jsoncpp/json/json.h>
@@ -42,9 +45,9 @@ int main(int argc, char *argv[])
 //        return 0;
 //    }
 
-    TMS9918State tms;
+    vchip::TMS9918State tms;
+    /*validation
     tms.setMode_Graphics2Default();
-
     tms.vpoke(0,129);
     tms.vpoke(1,24);
     tms.vpoke(7,36);
@@ -52,9 +55,21 @@ int main(int argc, char *argv[])
     tms.vpoke(8*33+7,255-129);
 
     tms.vpoke(0+0x2000,0x47);
+*/
+    TMS_SC2Loader tmsLoader(tms);
+
+    try {
+        ifstream ifs("test.sc2", ios::binary|ios::in);
+        tmsLoader.load(ifs);
+    } catch(const std::exception &e)
+    {
+
+    }
 
     tms.updateRender(); // would alloc buffers
 
+
+ //   SDL_Surface * imageToConv = IMG_Load("image.gif");
 
     SDL_Window * window=nullptr;
     SDL_Renderer * renderer = nullptr;

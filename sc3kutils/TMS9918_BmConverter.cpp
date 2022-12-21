@@ -1,8 +1,9 @@
 #include "TMS9918_BmConverter.h"
 
 using namespace std;
+using namespace vchip;
 
-TMSBmConverter::TMSBmConverter(TMS9918State &tms)
+TMS_BmConverter::TMS_BmConverter(TMS9918State &tms)
     :_tms(tms)
 {
 
@@ -24,7 +25,7 @@ inline errt colorDif(const uint8_t *pRgb,uint32_t palettec )
     return (uint16_t)rr+gg+bb;
 }
 
-void TMSBmConverter::map8PixelsToTMS(const uint8_t *pRgba,uint8_t &bm,uint8_t &cl, uint16_t &errorRate)
+void TMS_BmConverter::map8PixelsToTMS(const uint8_t *pRgba,uint8_t &bm,uint8_t &cl, uint16_t &errorRate)
 {
 
     const errt maxErr = 256*4;
@@ -70,7 +71,7 @@ void TMSBmConverter::map8PixelsToTMS(const uint8_t *pRgba,uint8_t &bm,uint8_t &c
 
 }
 
-void TMSBmConverter::mode2Map(const BmRGBA &bm)
+void TMS_BmConverter::mode2Map(const BmRGBA &bm)
 {
 
 }

@@ -1,28 +1,30 @@
 #include "TMS9918State.h"
 
 using namespace std;
+using namespace vchip;
 
 TMS9918State::TMS9918State()
     :_vmem(16384,0)
     ,_regs{0}
-    ,_pixelWidth(0)
-    ,_pixelHeight(0)
+    ,_pixelWidth(256)
+    ,_pixelHeight(192)
 {
     _paletteRGBA = {
         0x000000ff,
         0x010101ff,
-        0x49b83eff,
-        0x7dd074ff,
-        0xe05559ff,
-        0xf17680ff,
-        0x515eb9ff,
-        0xefdb65ff,
-        0x5965dbff,
-        0x7d89ffff,
-        0x5ec3fcff,
-        0x87d0deff,
-        0x41a23aff,
-        0xb566b7ff,
+        0x3eb849ff,
+        0x74d07dff,
+        0x5955e0ff,
+        0x8076f1ff,
+        0xb95e51ff,
+
+        0x65dbefff,
+        0xdb6559ff,
+        0xff897dff,
+        0xfcc35eff,
+        0xded087ff,
+        0x3aa241ff,
+        0xb766b5ff,
         0xccccccff,
         0xffffffff,
     };
@@ -128,7 +130,7 @@ void TMS9918State::updateRender_Mode2()
 
             for(uint8_t xl=0;xl<8;xl++ )
             {
-                uint8_t c = (bm&128)?fgc:bgc;
+                uint8_t c = (bm&128)?bgc:fgc;
                 *pwr++ = c;
                 *pwr32++ = _paletteRGBA[c];
 
