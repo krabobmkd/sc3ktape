@@ -30,6 +30,7 @@ namespace vchip {
             _vmem[a & 0x3fff]=v;
         }
         inline std::vector<uint8_t> &vmem() {return _vmem; }
+        inline const std::vector<uint8_t> &vmem() const {return _vmem; }
 
         struct TMSregs
         {
@@ -80,6 +81,7 @@ namespace vchip {
           //  unsigned char b1 : 3, : 2, b2 : 6, b3 : 2;
         };
         inline TMSregs &regs() {return _regs; }
+        inline const TMSregs &regs() const {return _regs; }
         // - - - - -
         inline uint16_t adress_NameTable() {
             return (uint16_t)_regs._2._NameTableBaseAdress * 0x400 ;

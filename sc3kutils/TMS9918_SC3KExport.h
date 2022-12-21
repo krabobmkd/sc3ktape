@@ -10,7 +10,7 @@ public:
 
     void doExport(std::ostream &ofs);
 protected:
-    vchip::TMS9918State &_tms;
+    const vchip::TMS9918State &_tms;
 };
 
 #endif
