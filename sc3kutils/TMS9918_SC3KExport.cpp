@@ -232,23 +232,44 @@ public:
         uint16_t i=0;
         int byteTypepart=0;
         uint8_t bpart=0;
+
+        size_t flagsAdress = comp.size();
+        comp.push_back(0);
         while(i<l)
         {
+            if(byteTypepart==4)
+            {
+                byteTypepart=0;
+                comp[flagsAdress] = bpart;
+
+                flagsAdress = comp.size();
+                comp.push_back(0);
+            }
+
+
             uint16_t lleft = l-i;
             if(lleft<3)
             {
-                // just copy
+                // left at end just copy
                 //..
+                comp.push_back(lleft);
+                for(uint16_t j=0;j<lleft;j++) comp.push_back(vmem[adr+i+j]);
+
+                bpart <<=2;
+                bpart |= CD_COPY;
+                byteTypepart++;
                 continue;
             }
             // if same consecutive data, memset mode
             uint8_t v=vmem[adr+i];
+
             if((v==vmem[adr+i+1]) && v==vmem[adr+i+2])
             {
                 uint16_t consl = 3;
                 while(consl<256 && (i+consl)<l && vmem[adr+i+consl] == v ) consl++;
 
-                comp[]
+                comp.push_back(consl);
+                comp.push_back(v);
 
                 i+= consl;
                 bpart <<=2;
@@ -257,21 +278,22 @@ public:
 
                 continue;
             }
-            // get 3b
-
-
-
-            uint16_t adr2=adr;
-
+            // get 3b and search them
+//            uint16_t adr2=adr;
+            // if not found, copy.
 
             //
             //
             // long fill cases, search for cons. same values>2
             // search in dic, must be there
 
+        } // end while
+        if(byteTypepart>0)
+        {
+            comp[flagsAdress] = bpart;
         }
 
-    }
+    } // end compress()
 
 }; // end of Dic class
 void TMS_Compressor::doExport(std::ostream &ofs)
