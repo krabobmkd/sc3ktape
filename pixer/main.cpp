@@ -61,12 +61,18 @@ int main(int argc, char *argv[])
     try {
         ifstream ifs("test.sc2", ios::binary|ios::in);
         tmsLoader.load(ifs);
+
+        TMS_Compressor exporter(tms);
+        ofstream exportOfs("woot.asm", ios::binary|ios::out);
+        exporter.doExport(exportOfs);
+
     } catch(const std::exception &e)
     {
-
+        cout << "exc: " << e.what() << endl;
     }
 
-    tms.updateRender(); // would alloc buffers
+
+    tms.updateRender(); // would alloc rgb buffers
 
 
  //   SDL_Surface * imageToConv = IMG_Load("image.gif");
