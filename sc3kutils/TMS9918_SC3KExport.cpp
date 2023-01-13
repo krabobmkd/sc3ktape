@@ -3,6 +3,7 @@
 #include <map>
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 using namespace std;
 using namespace vchip;
 
@@ -208,15 +209,20 @@ public:
         }*/
         // final dic bin, longer chains at end
         _bin.clear();
-        for(i=sorted.size()-1;i>=0;i--)
+        for(int j=(int)sorted.size()-1;j>=0;j--)
         {
-            _bin.insert(_bin.end(),sorted[i]._sv._v.begin(),sorted[i]._sv._v.end());
+            StreamValues &strvl =sorted[j]._sv;
+            _bin.insert(_bin.end(),strvl._v.begin(),strvl._v.end());
         }
         cout << "dic compiled size:" <<_bin.size() << endl;
 
     } // end of compile
     void compress( const vector<uint8_t> &vmem, uint16_t adr, uint16_t l, vector<uint8_t> &comp )
     {
+        if(_bin.size()==0)
+        {
+            throw runtime_error("compile before compress");
+        }
         //note for size repair: 1 charset: 256*8=2kb ->11bits 4k dico 12b
 
         // 1b gives the 4 next chunk types 4x 2b()->next 4 chunk
@@ -278,7 +284,45 @@ public:
 
                 continue;
             }
-            // get 3b and search them
+            // search next consecutive data or end, and propose copy.
+            uint16_t inext=i+1;
+            while(inext<l)
+            {
+
+            }
+
+            /*
+            // search for most long consecutive data  >2 in dic
+            int maxlfound=0;
+            int occfound=-1;
+            for(int is=0;is<(int)_bin.size()-3;is++)
+            {
+                int thislength=0;
+                while(vmem[adr+i+thislength]== _bin[is+thislength] &&
+                      is+thislength<(int)_bin.size() &&
+                      i+thislength<l
+                      )
+                {
+                    thislength++;
+                }
+                if(thislength>maxlfound)
+                {
+                    maxlfound = thislength;
+                    occfound = is;
+                }
+
+            }
+            if(maxlfound>2)
+            {
+                // keep dic ref.
+                i+= maxlfound;
+            } else
+            {
+                // no dic ref found
+            }
+            */
+
+
 //            uint16_t adr2=adr;
             // if not found, copy.
 

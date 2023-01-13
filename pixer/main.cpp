@@ -1,4 +1,4 @@
-/*  Written by Vic Ferry aka Krabob/Mkd - 2022
+/*  Written by Vic Ferry aka Krabob/Mkd - 2023
  This relase is under APACHE LICENSE , Version 2.0 https://www.apache.org/licenses/LICENSE-2.0
   _________                       __________________ ________ _______  _______  _______
  /   _____/ ____   _________     /   _____/\_   ___ \\_____  \\   _  \ \   _  \ \   _  \
@@ -16,7 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include <stdexcept>
 #include <SDL.h>
 #include <SDL_image.h>
 
@@ -38,12 +38,13 @@ int main(int argc, char *argv[])
 {
     Log::global().addLogListener(std::cout,{eError,eWarning,eInfo});
     Log::global().setWarningErrorAutoColor(true);
-//    if(argc<2)
-//    {
-//        LOGI() << " - \n";
-//        LOGI() << endl;
-//        return 0;
-//    }
+    if(argc<2)
+    {
+        LOGI() << " need .sc2 file as arg1 \n";
+        LOGI() << endl;
+        return 0;
+    }
+    string sc2file = argv[1];
 
     vchip::TMS9918State tms;
     /*validation
@@ -59,7 +60,14 @@ int main(int argc, char *argv[])
     TMS_SC2Loader tmsLoader(tms);
 
     try {
-        ifstream ifs("test.sc2", ios::binary|ios::in);
+        ifstream ifs(sc2file, ios::binary|ios::in);
+        if(!ifs.good())
+        {
+            stringstream ss;
+            ss << "can't read .sc2 image file :" << sc2file << endl;
+            throw runtime_error(ss.str());
+        }
+
         tmsLoader.load(ifs);
 
         TMS_Compressor exporter(tms);
