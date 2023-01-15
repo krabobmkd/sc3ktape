@@ -12,6 +12,12 @@ namespace vchip {
         TMS9918State();
 
         void setMode_Graphics2Default();
+        void graphics2BitmapClear(); // just clear graphics2 bitmap area.
+        // switch bits if needed, multipaint does nasty things sometimes
+
+        uint32_t normalize1To0();
+        uint32_t normalizeForCompression();
+
         void updateRender();
 
         inline int pixelWidth() const {

@@ -613,52 +613,71 @@ int SC3KBasic::readWave(std::istream &inputStream)
     }
     const vector<unsigned char> &programTapeHead = vb[0];
 
-    if(programTapeHead.size()<22) {
-        throw runtime_error( "header chunk too short" );
+    // at least type id byte at start and parity byte +2 zeroes at end, in all cases
+    if(programTapeHead.size()<4) {
+        throw runtime_error( "header chunk fail size less than 4" );
     }
     _keyCode = programTapeHead[0];
-    if(programTapeHead[0] != 0x16) {
-        throw runtime_error( "header code not 0x16" );
-    }
 
-    string sgfileName;
-    _FileName = "";
-    for(int i=0;i<16;i++)
-    {
-        char c = (char)programTapeHead[i+1];
-       // no, it's space. if(c==0) break;
-        if(programTapeHead[i+1]!=0) sgfileName+= c;
-    }
-    // remove end spaces
-//    while(sgfileName.length()>0 && sgfileName.back()==' ') sgfileName.pop_back();
-    while(sgfileName.length()>0 && sgfileName[sgfileName.length()-1]==' ')
-    {
-        string s = sgfileName.substr(0,sgfileName.length()-1);
-        sgfileName = s;
-    }
+    if(programTapeHead[0] == 0x16) {
+        // means basic program
+ //merde LR c'est le meme ID.
+        if(programTapeHead.size()<22) {
+            throw runtime_error( "header chunk too short for BASIC" );
+        }
 
-    _FileName = SegasciiToUtf8(sgfileName,m_isEuroAscii);
-    _ProgramLength = ( (unsigned short)programTapeHead[17]<<8) |( (unsigned short)programTapeHead[18] );
+
+        string sgfileName;
+        _FileName = "";
+        for(int i=0;i<16;i++)
+        {
+            char c = (char)programTapeHead[i+1];
+           // no, it's space. if(c==0) break;
+            if(programTapeHead[i+1]!=0) sgfileName+= c;
+        }
+        // remove end spaces
+    //    while(sgfileName.length()>0 && sgfileName.back()==' ') sgfileName.pop_back();
+        while(sgfileName.length()>0 && sgfileName[sgfileName.length()-1]==' ')
+        {
+            string s = sgfileName.substr(0,sgfileName.length()-1);
+            sgfileName = s;
+        }
+
+        _FileName = SegasciiToUtf8(sgfileName,m_isEuroAscii);
+        _ProgramLength = ( (unsigned short)programTapeHead[17]<<8) |( (unsigned short)programTapeHead[18] );
+
+        cout << "BASIC ProgramName: " << _FileName << endl;
+        cout << "BASIC ProgramByteSize: " << dec << _ProgramLength << endl;
+    }
+    if(programTapeHead[0] == 0x22) {
+        // means lode runner level editor save
+
+    }
     //verify parity ?
     unsigned char parity = 0;
-    for(int i=1;i<19;i++)
+    for(int i=1;i</*19*/ programTapeHead.size()-3;i++)
     {
         parity += (unsigned char)programTapeHead[i];
       //  for(int j=0;j<8;j++) if( (((unsigned char)1<<j)&c) != 0) parity ++;
     }
     parity =(unsigned char)(-(int)parity);
-//    if((unsigned char)programTapeHead[19] != (unsigned char)parity)
+
+    unsigned char parityRead = (unsigned char)programTapeHead[programTapeHead.size()-3];
+    cout << "Parity check: " << (int)parity << "  parity read: " << parityRead << endl;
+    if(parityRead != parity)
     {
-    cout << "Parity Issue t: " << (int)programTapeHead[19] << " : " << (int)parity << endl;
-       // throw runtime_error( "wrong header parity" );
-    }
-    if(programTapeHead[20] != 0 || programTapeHead[21] != 0)
+        cout << "Header parity issue !" << endl;
+    } else
     {
-        throw runtime_error( "Dummy zero overriden at end of header chunk." );
+        cout << "Header Parity Ok." << endl;
     }
 
-    cout << "ProgramName: " << _FileName << endl;
-    cout << "ProgramByteSize: " << dec << _ProgramLength << endl;
+    if(programTapeHead[programTapeHead.size()-2] != 0 ||
+            programTapeHead[programTapeHead.size()-1] != 0)
+    {
+        throw runtime_error( "Dummy zero not correct at end of header chunk." );
+    }
+
 
     // - - - program chunk:
     const vector<unsigned char> &programBin = vb[1];

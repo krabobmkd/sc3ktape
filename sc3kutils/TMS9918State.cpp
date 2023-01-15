@@ -79,6 +79,15 @@ void TMS9918State::setMode_Graphics2Default()
     // implie name tables...
     //_vmem
 }
+void TMS9918State::graphics2BitmapClear()
+{
+    for(uint16_t i=0;i<6*1024;i++)
+    {
+        _vmem[i]=0; // bitmap
+        _vmem[i+0x2000]=0xf0; // color
+
+    }
+}
 
 void TMS9918State::updateRender()
 {
@@ -87,7 +96,69 @@ void TMS9918State::updateRender()
        updateRender_Mode2();
     }
 }
-
+uint32_t TMS9918State::normalize1To0()
+{
+    uint32_t nbChangedone=0;
+    // just set to 0 when unified 8 pixels
+    for(uint16_t i=0;i<6*1024;i++)
+    {
+        bool changed=false;
+        uint8_t cl =_vmem[i+0x2000];
+        // case where useless BM
+        uint8_t cl1 =  cl & 0x0f;
+        uint8_t cl2 =  cl>>4;
+        if(cl1==1) {
+            cl1=0;
+            nbChangedone++;
+            changed=true;
+        }
+        if(cl2==1) {
+            cl2=0;
+            nbChangedone++;
+            changed=true;
+        }
+        if(changed)
+        {
+            _vmem[i+0x2000] = (cl2<<4) | cl1;
+        }
+    }
+    return nbChangedone;
+}
+// switch bits if needed, multipaint does nasty things sometimes
+uint32_t TMS9918State::normalizeForCompression()
+{
+    uint32_t nbChangedone=0;
+    // just set to 0 when unified 8 pixels
+    for(uint16_t i=0;i<6*1024;i++)
+    {
+        uint8_t bm =_vmem[i];
+        uint8_t cl =_vmem[i+0x2000];
+        // case where just one color on BM
+        if(bm==0)
+        {   // set 0 to unused color field
+            if((cl & 0xf0) !=0)
+            {
+                _vmem[i+0x2000] =cl= cl & 0x0f;
+                nbChangedone++;
+            }
+        } else if(bm==255)
+        {   // rather use color field -not sure if optimize- but normalize
+            _vmem[i]=bm =0;
+            _vmem[i+0x2000] =cl = (cl>>4); // switch color
+            nbChangedone++;
+        }
+        // case where useless BM
+        uint8_t cl1 =  cl & 0x0f;
+        uint8_t cl2 =  cl>>4;
+        if(cl1==cl2 && (bm!=0 && bm !=255))
+        {
+            _vmem[i] = bm = 0;
+            _vmem[i+0x2000] = cl = cl1;
+            nbChangedone++;
+        }
+    }
+    return nbChangedone;
+}
 void TMS9918State::updateRender_Mode2()
 {
     _pixelWidth = 256;

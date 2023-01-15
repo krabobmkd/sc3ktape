@@ -223,6 +223,10 @@ public:
         {
             throw runtime_error("compile before compress");
         }
+        // first put start adr
+        comp.push_back( (uint8_t) (adr & 255));
+        comp.push_back( (uint8_t) ((adr>>8) & 255));
+
         //note for size repair: 1 charset: 256*8=2kb ->11bits 4k dico 12b
 
         // 1b gives the 4 next chunk types 4x 2b()->next 4 chunk
@@ -254,16 +258,17 @@ public:
 
 
             uint16_t lleft = l-i;
-            if(lleft<3)
+            if(lleft<=3)
             {
                 // left at end just copy
                 //..
-                comp.push_back(lleft);
+                comp.push_back(lleft-1);
                 for(uint16_t j=0;j<lleft;j++) comp.push_back(vmem[adr+i+j]);
 
-                bpart <<=2;
-                bpart |= CD_COPY;
+                bpart >>=2;
+                bpart |= (CD_COPY<<6);
                 byteTypepart++;
+                i+=lleft;
                 continue;
             }
             // if same consecutive data, memset mode
@@ -274,23 +279,50 @@ public:
                 uint16_t consl = 3;
                 while(consl<256 && (i+consl)<l && vmem[adr+i+consl] == v ) consl++;
 
-                comp.push_back(consl);
+                comp.push_back(consl-1);
                 comp.push_back(v);
 
+                cout << "push fill:" << (int)v << " l:" << consl << endl;
+
                 i+= consl;
-                bpart <<=2;
-                bpart |= CD_MEMSET;
+                bpart >>=2;
+                bpart |= (CD_MEMSET<<6);
                 byteTypepart++;
 
                 continue;
             }
             // search next consecutive data or end, and propose copy.
-            uint16_t inext=i+1;
-            while(inext<l)
+            uint16_t inext=i;
+            while(inext<l-3)
             {
-
+                uint8_t vt = vmem[adr+inext];
+                uint16_t itt=1;
+                while(itt<l-3)
+                {
+                    uint8_t vtt = vmem[adr+inext+itt];
+                    if(vtt!=vt) break;
+                    itt++;
+                }
+                if(itt>=3) break;
+                inext++;
             }
+             cout << "dist to next:" << (inext-i)<< endl;
+            if(inext==i) continue; // no copy , fill to fill.
+            //  do copy between
+            {
+                uint16_t il = inext-i;
+                if(il>256) il=256;
+                comp.push_back( (uint8_t)(il-1));
+                for(uint16_t j=0;j<il;j++) comp.push_back(vmem[adr+i+j]);
 
+                cout << "push copy:" << (int)v << " l:" << il << endl;
+
+                bpart >>=2;
+                bpart |= (CD_COPY<<6);
+                byteTypepart++;
+                i+=il;
+                continue;
+            }
             /*
             // search for most long consecutive data  >2 in dic
             int maxlfound=0;
@@ -334,16 +366,74 @@ public:
         } // end while
         if(byteTypepart>0)
         {
+            while(byteTypepart<4){
+                bpart>>=2;
+                byteTypepart++;
+            }
             comp[flagsAdress] = bpart;
         }
 
     } // end compress()
 
+    // for testing
+    void deCompress( vector<uint8_t> &vmem,const vector<uint8_t> &comp )
+    {
+        if(comp.size()<4) return;
+
+        // get adress of start of decomp
+        uint16_t adr = ((uint16_t)comp[0]) |  (((uint16_t)comp[1])<<8);
+        uint16_t i=2;
+
+        uint8_t typeparts4 =0; // scomp[i];
+        uint8_t typei = 4;
+        while(i<(uint16_t)comp.size())
+        {
+            if(typei==4)
+            {
+                typei=0;
+                typeparts4 = comp[i]; i++;
+            }
+            if((typeparts4 & 3)==0 ) // memset
+            {
+                // fill
+                uint16_t l = comp[i]; i++;
+                uint8_t v = comp[i]; i++;
+                for(uint16_t j=0;j<=l;j++)
+                {
+                    vmem[adr]=v;
+                    adr++;
+                }
+                typeparts4>>=2;
+                typei++;
+                continue;
+            }
+            // else copy n
+            //re if((typeparts4 & 3)==CD_COPY) // copy
+            {
+                uint16_t l = comp[i]; i++;
+                for(uint16_t j=0;j<=l;j++)
+                {
+                    vmem[adr]=comp[i]; i++;
+                    adr++;
+                }
+
+                typeparts4>>=2;
+                typei++;
+                continue;
+            }
+
+        } // main decomp while loop
+
+
+    }
 }; // end of Dic class
 void TMS_Compressor::doExport(std::ostream &ofs)
 {
 
     // compress images in ram table using dictionary
+    uint32_t nbchanges = _tms.normalize1To0();
+    nbchanges += _tms.normalizeForCompression();
+    cout << "normalize bitmap nbchange: " << nbchanges << endl;
 
     const vector<uint8_t> &vmem= _tms.vmem();
 
@@ -357,7 +447,14 @@ void TMS_Compressor::doExport(std::ostream &ofs)
     //feedDic(vmem,dic,vma1, 0, 1024*6);
     //
     vector<uint8_t> bmComp,clComp;
-    bmDic.compress(vmem,0,1024*6,bmComp);
-    bmDic.compress(vmem,0,1024*6,clComp);
-    cout << "final size:" <<(int)(bmDic._bin.size() + bmComp.size() + clComp.size()) << endl;
+    bmDic.compress(vmem,0x0000,1024*6,bmComp);
+    bmDic.compress(vmem,0x2000,1024*6,clComp);
+
+    cout << "final size:" <<(int)(/*bmDic._bin.size() +*/ bmComp.size() + clComp.size()) << endl;
+
+    // test decompress
+    _tms.graphics2BitmapClear();
+    bmDic.deCompress(_tms.vmem(),bmComp);
+    bmDic.deCompress(_tms.vmem(),clComp);
+
 }
