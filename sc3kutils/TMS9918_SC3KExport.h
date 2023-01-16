@@ -21,9 +21,14 @@ class TMS_Compressor {
 public:
     TMS_Compressor(vchip::TMS9918State &tms);
 
-    void doExport(std::ostream &ofs);
+    void compressGraphics2();
+    void exportAsm(std::ostream &ofs, std::string labelName);
 protected:
     vchip::TMS9918State &_tms;
+    std::vector<uint8_t> _comp_bm,_comp_cl;
+
+    void exportAsm(std::ostream &ofs, std::string labelName,
+                   const std::vector<uint8_t> &cv, std::string stype);
 };
 
 #endif

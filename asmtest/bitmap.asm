@@ -128,3 +128,4 @@ testdata:
 dataend:
 	.db $10
 	.db $11
+.include graphics.asm

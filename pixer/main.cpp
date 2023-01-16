@@ -71,8 +71,9 @@ int main(int argc, char *argv[])
         tmsLoader.load(ifs);
 
         TMS_Compressor exporter(tms);
-        ofstream exportOfs("woot.asm", ios::binary|ios::out);
-        exporter.doExport(exportOfs);
+        ofstream exportOfs("graphics.asm", ios::binary|ios::out);
+        exporter.compressGraphics2();
+        exporter.exportAsm(exportOfs,"gfx");
 
     } catch(const std::exception &e)
     {

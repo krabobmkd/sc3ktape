@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <iomanip>
 using namespace std;
 using namespace vchip;
 
@@ -13,12 +14,12 @@ TMS_SC2BitmapNormalizer::TMS_SC2BitmapNormalizer(vchip::TMS9918State &tms)
     :_tms(tms)
 {}
 int TMS_SC2BitmapNormalizer::normalize()
-{
+{       
     return 0;
 }
 
 // 2b code, 64l.
-
+/*
 // next is copy n(1-64) bytes "as is".
 #define CD_CPY 0
 // next is n*( b read 8b from current charset)
@@ -27,7 +28,7 @@ int TMS_SC2BitmapNormalizer::normalize()
 #define CD_CHGCHST 2
 //...
 #define CD_ 3
-
+*/
 TMS_Compressor::TMS_Compressor(vchip::TMS9918State &tms)
     :_tms(tms)
 {
@@ -223,6 +224,9 @@ public:
         {
             throw runtime_error("compile before compress");
         }
+        // first let jump to next
+        comp.push_back( 0);
+        comp.push_back( 0);
         // first put start adr
         comp.push_back( (uint8_t) (adr & 255));
         comp.push_back( (uint8_t) ((adr>>8) & 255));
@@ -372,21 +376,26 @@ public:
             }
             comp[flagsAdress] = bpart;
         }
+        // ultimately set jump size
+        uint16_t s = (uint16_t)comp.size();
+        comp[0] = (uint8_t)s ;
+        comp[1] = (uint8_t)(s>>8) ;
 
     } // end compress()
 
     // for testing
     void deCompress( vector<uint8_t> &vmem,const vector<uint8_t> &comp )
     {
-        if(comp.size()<4) return;
+        if(comp.size()<6) return;
 
         // get adress of start of decomp
-        uint16_t adr = ((uint16_t)comp[0]) |  (((uint16_t)comp[1])<<8);
-        uint16_t i=2;
+        uint16_t cs = ((uint16_t)comp[0]) |  (((uint16_t)comp[1])<<8);
+        uint16_t adr = ((uint16_t)comp[2]) |  (((uint16_t)comp[3])<<8);
+        uint16_t i=4;
 
         uint8_t typeparts4 =0; // scomp[i];
         uint8_t typei = 4;
-        while(i<(uint16_t)comp.size())
+        while(i<cs)
         {
             if(typei==4)
             {
@@ -427,7 +436,7 @@ public:
 
     }
 }; // end of Dic class
-void TMS_Compressor::doExport(std::ostream &ofs)
+void TMS_Compressor::compressGraphics2()
 {
 
     // compress images in ram table using dictionary
@@ -446,15 +455,44 @@ void TMS_Compressor::doExport(std::ostream &ofs)
     //clDic.compile();
     //feedDic(vmem,dic,vma1, 0, 1024*6);
     //
-    vector<uint8_t> bmComp,clComp;
-    bmDic.compress(vmem,0x0000,1024*6,bmComp);
-    bmDic.compress(vmem,0x2000,1024*6,clComp);
 
-    cout << "final size:" <<(int)(/*bmDic._bin.size() +*/ bmComp.size() + clComp.size()) << endl;
+    bmDic.compress(vmem,0x0000,1024*6,_comp_bm);
+    bmDic.compress(vmem,0x2000,1024*6,_comp_cl);
+
+    cout << "final size:" <<(int)(/*bmDic._bin.size() +*/ _comp_bm.size() + _comp_cl.size()) << endl;
 
     // test decompress
     _tms.graphics2BitmapClear();
-    bmDic.deCompress(_tms.vmem(),bmComp);
-    bmDic.deCompress(_tms.vmem(),clComp);
+    bmDic.deCompress(_tms.vmem(),_comp_bm);
+    bmDic.deCompress(_tms.vmem(),_comp_cl);
 
+}
+void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName)
+{
+    ofs<<"; Exported from pixer\n";
+    exportAsm(ofs,labelName,_comp_bm,"bm");
+    exportAsm(ofs,labelName,_comp_cl,"cl");
+}
+
+void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName,
+               const std::vector<uint8_t> &cv, std::string stype)
+{
+    ofs<< labelName << "_" << stype << ":\n";
+    uint16_t j=0;
+    ofs << setfill('0') << setw(2) << right << hex;
+    ofs << "\t.db ";
+    for(uint32_t i=0;i<(uint32_t)cv.size();i++)
+    {
+        if(j==64)
+        {
+            j=0;
+            ofs << "\n\t.db ";
+        }
+        if(j>0) ofs << ",";
+        ofs <<"$" << (int)cv[i];
+
+        j++;
+    }
+    ofs << "\n";
+    ofs<< labelName << "_" << stype << "_end:\n\n";
 }
