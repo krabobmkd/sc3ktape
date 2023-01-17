@@ -80,7 +80,13 @@ main:
 	ld hl,Bitmap
 	ld b,BitmapEnd-Bitmap
 	ld c,VDPData
-	otir
+	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
+
+;otdr ; Reads from (HL) and writes to the (C) port. HL and B are then decremented. Repeats until B = 0.
+
+    ; out (imm8),a ; Writes the value of the second operand into the port given by the first operand.
+    ; out (c),reg8
+
 
     ; load tilemap (Background)
  ;   SetVDPAddress $3800 | VRAMWrite
@@ -95,8 +101,180 @@ main:
 ;justafter:
 ;	call other ; calls adress are 2b absoluete according to org.
 	ret
-;other:
-;	ret
+
+	;bc
+	;de
+	;hl
+	;a
+	; ''indexé
+	; ix -> can be used for stack
+	; iy -> can be used for stack
+	; sp
+	; i 'interupt vector'
+
+;ADD A,im8
+;ADD A,reg8
+;ADD A,(reg16)
+;ADD HL,HL ou BC ou DE ou SP
+;ADD IX,BC ou DE ou IX ou SP
+;ADD IY,BC ou DE ou IY ou SP
+;SUB 5    ; équivalent à SUB A,5
+;SUB D    ; équivalent à SUB A,D
+;SUB (HL) ; équivalent à SUB A,(HL)
+
+; only can
+;add a,a
+;add a,b
+;add a,c
+;add a,d
+;add a,e
+;add a,h
+;add a,l
+;add a,ixh
+;add a,ixl
+;add a,iyh
+;add a,ixl
+;add a,(hl)
+;add a,(ix+n)
+;add a,(iy+n)
+;add a,n        ;8-bit constant
+
+;add hl,bc
+;add hl,de
+;add hl,hl
+;add hl,sp
+
+;add ix,bc
+;add ix,de
+;add ix,ix
+;add ix,sp
+
+;add iy,bc
+;add iy,de
+;add iy,iy
+;add iy,sp
+
+.define dc_dataend $0
+.define dc_ $2
+.define dc_structsize $4
+
+.define tempmem $0000
+
+decomp:
+	; stack thing
+;	ld	ix,0
+;	add	ix,sp
+;	ld	iy, -dc_structsize
+;	add	iy, sp
+;	ld	sp, iy
+
+	; params:
+	; hl comp data start
+	; c index of id to decomp.
+
+	; todo loop for hl to reach c, then c free
+
+	; hl comp data
+	; -- find end of comp data
+	ld c,(hl) ; low
+	inc hl
+	ld b,(hl) ; hi
+	inc hl
+
+	push hl
+	add hl,bc
+	ld (tempmem+dc_dataend),hl
+	pop hl
+
+	; - - - set VDP write adress
+	di
+		; The lower eight bits are written first.
+		ld c,VDPControl
+		ld b,(hl) ; low
+		inc hl
+		out (c),b
+		ld b,(hl) ; hi
+		inc hl
+		out (c),b
+    ei
+
+
+
+    ; a: multi purpose and/or/add
+    ;b
+    ;c
+    ;d - nbpart
+    ;e - flags
+
+    ld d,1 ; means: get new flags now
+
+decomploop:
+    ; compare ptr trick
+    ld bc,(tempmem+dc_dataend)
+    or a ; clear carry flag
+    sbc hl,bc
+    add hl,bc
+    ; test end
+    jp NZ,decomploop_end ; NZ C
+
+    ; - - -  in all cases, flags shifts 2 bits
+    srl e
+    srl e
+    ; - - - test if need new flag
+
+    dec d
+    jp NZ,nonewflags
+
+    ld d,4+1
+    ld e,(hl)
+    inc hl
+
+    ;ld a,e
+    ;ld e,a
+nonewflags:
+
+    ;#define CD_MEMSET 0
+    ;#define CD_COPY 1
+    ; 4 cases -- test flag
+    bit 0,e
+    jp Z,dcmp_memset
+
+dcmp_copy:
+	; - - -  - - copy
+	; note: otir will write "b" bytes to video adress set at begining of decomp.
+	ld b,(hl)
+	inc hl
+	ld c,VDPData
+	; may need + 1 byte copied here
+	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
+
+    jp  decomploop
+dcmp_memset:
+	;  - - - - - - memset
+	ld b,(hl) ; length
+	inc hl
+	ld a,(hl) ; value
+	inc hl
+	ld c,VDPData
+dcmp_msetloop:
+	out (c),a
+	dec b
+	jp NZ,dcmp_msetloop
+
+    jp  decomploop
+decomploop_end:
+
+; stack thing
+;	ld	iy, dc_structsize
+;	add	iy, sp
+;	ld	sp, iy
+	ret
+setDefaultTileName:
+	; TODO: easy !
+
+	ret
+
+
 ; - - - - -
 ;reg0: 2:mode2
 ;reg1
@@ -128,4 +306,4 @@ testdata:
 dataend:
 	.db $10
 	.db $11
-.include graphics.asm
+;re .include graphics.asm

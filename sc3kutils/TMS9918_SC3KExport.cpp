@@ -8,6 +8,7 @@
 using namespace std;
 using namespace vchip;
 
+#define VRAMWrite 0x4000
 
 
 TMS_SC2BitmapNormalizer::TMS_SC2BitmapNormalizer(vchip::TMS9918State &tms)
@@ -228,8 +229,10 @@ public:
         comp.push_back( 0);
         comp.push_back( 0);
         // first put start adr
-        comp.push_back( (uint8_t) (adr & 255));
-        comp.push_back( (uint8_t) ((adr>>8) & 255));
+
+        uint16_t adrw = adr | VRAMWrite; // needed by z80 io port to write video mem.
+        comp.push_back( (uint8_t) (adrw & 255));
+        comp.push_back( (uint8_t) ((adrw>>8) & 255));
 
         //note for size repair: 1 charset: 256*8=2kb ->11bits 4k dico 12b
 
@@ -377,7 +380,7 @@ public:
             comp[flagsAdress] = bpart;
         }
         // ultimately set jump size
-        uint16_t s = (uint16_t)comp.size();
+        uint16_t s = (uint16_t)comp.size() -2;
         comp[0] = (uint8_t)s ;
         comp[1] = (uint8_t)(s>>8) ;
 
@@ -389,8 +392,12 @@ public:
         if(comp.size()<6) return;
 
         // get adress of start of decomp
-        uint16_t cs = ((uint16_t)comp[0]) |  (((uint16_t)comp[1])<<8);
+        uint16_t cs = (((uint16_t)comp[0]) |  (((uint16_t)comp[1])<<8))+2;
         uint16_t adr = ((uint16_t)comp[2]) |  (((uint16_t)comp[3])<<8);
+       // adr &= (~VRAMWrite);
+        // again betterto address the 16k of VDP mem
+        adr &= 0x3fff;
+
         uint16_t i=4;
 
         uint8_t typeparts4 =0; // scomp[i];
