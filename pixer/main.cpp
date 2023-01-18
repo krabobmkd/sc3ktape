@@ -33,6 +33,16 @@
  using namespace std;
 
 
+string trimfileName(string pathn)
+{
+    string s = pathn;
+    size_t i = s.find_last_of("/\\");
+    if(i != string::npos)
+    {
+        s = s.substr(i+1);
+    }
+    return s;
+}
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +81,9 @@ int main(int argc, char *argv[])
         tmsLoader.load(ifs);
 
         TMS_Compressor exporter(tms);
-        ofstream exportOfs("graphics.asm", ios::binary|ios::out);
+        string exportname = trimfileName(sc2file) + ".asm";
+
+        ofstream exportOfs(exportname, ios::binary|ios::out);
         exporter.compressGraphics2();
         exporter.exportAsm(exportOfs,"gfx");
 

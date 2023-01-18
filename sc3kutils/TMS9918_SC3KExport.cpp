@@ -477,14 +477,16 @@ void TMS_Compressor::compressGraphics2()
 void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName)
 {
     ofs<<"; Exported from pixer\n";
+    ofs << "; compressed bitmap:\n";
     exportAsm(ofs,labelName,_comp_bm,"bm");
+    ofs << "; compressed colors:\n";
     exportAsm(ofs,labelName,_comp_cl,"cl");
 }
 
 void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName,
                const std::vector<uint8_t> &cv, std::string stype)
 {
-    ofs<< labelName << "_" << stype << ":\n";
+//finnaly no label    ofs<< labelName << "_" << stype << ":\n";
     uint16_t j=0;
     ofs << setfill('0') << setw(2) << right << hex;
     ofs << "\t.db ";
@@ -501,5 +503,5 @@ void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName,
         j++;
     }
     ofs << "\n";
-    ofs<< labelName << "_" << stype << "_end:\n\n";
+ //no label   ofs<< labelName << "_" << stype << "_end:\n\n";
 }

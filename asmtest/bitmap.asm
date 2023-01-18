@@ -59,29 +59,45 @@ banks 1
 .endm
 
 ;.bank 1 slot 1
-	.org $981B
+	;.org $9819
+	.org $9832
 testd:
 main:
-	di
 
     ; set up VDP registers
-
+;re
+    di
     ld hl,VDPInitData
     ld b,VDPInitDataEnd-VDPInitData
     ld c,VDPControl
-    otir	
- 
+    otir
+ 	ei
     ; load tiles (Background)
 ;    SetVDPAddress $0000 | VRAMWrite
 ;    ld hl,Bitmap
 ;    ld de,BitmapEnd-Bitmap
 ;    CopyToVDP
-    SetVDPAddress $0000 | VRAMWrite
-	ld hl,Bitmap
-	ld b,BitmapEnd-Bitmap
-	ld c,VDPData
-	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
 
+; was ok
+;    SetVDPAddress $0000 | VRAMWrite
+;	ld hl,Bitmap
+;	ld b,BitmapEnd-Bitmap
+;	ld c,VDPData
+;	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
+
+;    ld hl,logo_bm_cdata
+;    call decomp_to_dvp
+;   ld hl,logo_cl_cdata
+;    call decomp_to_dvp
+
+    ld hl,skull_bm_cdata
+    call decomp_to_dvp
+
+   ld hl,skull_cl_cdata
+    call decomp_to_dvp
+
+ ;   ld hl,logo_cl_cdata
+ ;   jp decomp_to_dvp
 ;otdr ; Reads from (HL) and writes to the (C) port. HL and B are then decremented. Repeats until B = 0.
 
     ; out (imm8),a ; Writes the value of the second operand into the port given by the first operand.
@@ -95,7 +111,7 @@ main:
  ;   CopyToVDP
 
 
-	ei
+
 ;	jp justafter ; jump adress are 2b absolute according to org.
 ;	nop
 ;justafter:
@@ -154,13 +170,16 @@ main:
 ;add iy,iy
 ;add iy,sp
 
-.define dc_dataend $0
+
+.define dc_dataend $8+$0
 .define dc_ $2
 .define dc_structsize $4
 
-.define tempmem $0000
+; 0 ->8000 rom
+; 8000->c000 ram for basic
 
-decomp:
+
+decomp_to_dvp:
 	; stack thing
 ;	ld	ix,0
 ;	add	ix,sp
@@ -183,21 +202,20 @@ decomp:
 
 	push hl
 	add hl,bc
-	ld (tempmem+dc_dataend),hl
+	ld (dc_writeendofdatahere+1),hl
 	pop hl
 
 	; - - - set VDP write adress
 	di
-		; The lower eight bits are written first.
-		ld c,VDPControl
-		ld b,(hl) ; low
-		inc hl
-		out (c),b
-		ld b,(hl) ; hi
-		inc hl
-		out (c),b
-    ei
 
+	; The lower eight bits are written first.
+	ld c,VDPControl
+	ld b,(hl) ; low
+	inc hl
+	out (c),b
+	ld b,(hl) ; hi
+	inc hl
+	out (c),b
 
 
     ; a: multi purpose and/or/add
@@ -206,16 +224,19 @@ decomp:
     ;d - nbpart
     ;e - flags
 
-    ld d,1 ; means: get new flags now
 
+    ld d,1 ; means: get new flags now
+;breakpoint 9843
 decomploop:
     ; compare ptr trick
-    ld bc,(tempmem+dc_dataend)
+dc_writeendofdatahere:
+    ld bc,0    ;(tempdata+dc_dataend)
     or a ; clear carry flag
     sbc hl,bc
     add hl,bc
     ; test end
-    jp NZ,decomploop_end ; NZ C
+    ;jp NZ,decomploop_end ; NZ C
+    jp Z,decomploop_end ; Z set if hl==bc
 
     ; - - -  in all cases, flags shifts 2 bits
     srl e
@@ -225,7 +246,7 @@ decomploop:
     dec d
     jp NZ,nonewflags
 
-    ld d,4+1
+    ld d,4
     ld e,(hl)
     inc hl
 
@@ -240,14 +261,21 @@ nonewflags:
     jp Z,dcmp_memset
 
 dcmp_copy:
-	; - - -  - - copy
+	; - - -  - - copy - mean length is 1, special case
 	; note: otir will write "b" bytes to video adress set at begining of decomp.
-	ld b,(hl)
+;	ld c,VDPData
+	ld b,(hl)	
 	inc hl
-	ld c,VDPData
+	; a bit ugly test
+	inc b
+	dec b ; test 0b xb
+	jp Z,dcmp_cp_l_is0
 	; may need + 1 byte copied here
-	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
-
+	ld c,VDPData
+	otir	; Reads from (HL) and writes to the (C) port. HL i98s incremented and B is decremented. Repeats until B = 0.
+dcmp_cp_l_is0:
+	ld c,VDPData
+	outi		; one more because b means [1,256]
     jp  decomploop
 dcmp_memset:
 	;  - - - - - - memset
@@ -260,10 +288,11 @@ dcmp_msetloop:
 	out (c),a
 	dec b
 	jp NZ,dcmp_msetloop
+	out (c),a  ; one more because b means [1,256]
 
     jp  decomploop
 decomploop_end:
-
+    ei
 ; stack thing
 ;	ld	iy, dc_structsize
 ;	add	iy, sp
@@ -294,16 +323,19 @@ setDefaultTileName:
 VDPInitData:
 .db $02,$80
 .db $E2,$81
-.db $56,$87
+.db $11,$87 ; bg colors
 ;.db $14,$80,$00,$81,$ff,$82,$ff,$85,$ff,$86,$ff,$87,$00,$88,$00,$89,$ff,$8a
 VDPInitDataEnd:
-Bitmap:
-.db $98,$76,$54
-BitmapEnd:
 
-testdata:
-	.db "CAN WO"
-dataend:
-	.db $10
-	.db $11
+	;.include krb_mkd5.sc2.asm
+	.include krb_cyberskull.sc2.asm
+
+; in basic tape mode, remaining ram data start is obviously here:
+tempdata:
+
+;testdata:
+;	.db "CAN WO"
+;dataend:
+;	.db $10
+;	.db $11
 ;re .include graphics.asm
