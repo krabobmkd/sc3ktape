@@ -15,7 +15,7 @@ public:
     void soundToBytes(const std::vector<signed short> &soundVector, unsigned int freq);
 
     /** convert bytes to external sound vector */
-    void bytesToSound(std::vector<signed short> &soundVector);
+    // void bytesToSound(std::vector<signed short> &soundVector);
 
     /** get bytes */
     inline const std::vector< std::vector<unsigned char> > &vbytes() { return m_vbytes; }
