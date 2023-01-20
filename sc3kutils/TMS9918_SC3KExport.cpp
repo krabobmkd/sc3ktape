@@ -45,6 +45,38 @@ struct CompressedVMemArea {
     vector<uint8_t> _v;
 };
 
+// return common parts with l>2
+uint16_t findVecInVec(const vector<uint8_t> &base,
+                        const vector<uint8_t> &origToSearch,
+                        uint16_t &iInBase,
+                        uint16_t &iInOrig
+                        )
+{
+    for(size_t ib=0;ib<base.size()-3;ib++)
+    {
+        for(size_t io=0;io<origToSearch.size()-3;io++)
+        {
+            //
+            if(io==1 || io==2) continue; // not authorized because would insert a more big copy.
+            size_t lf=0;
+            for(size_t iol=io;iol<origToSearch.size()
+                                    &&  ib+lf<base.size()  ;
+                                    iol++)
+            {
+                if(base[ib+lf]!= origToSearch[iol]) break;
+                lf++;
+            }
+            if(lf>2)
+            {
+                iInBase =(uint16_t)ib;
+                iInOrig = (uint16_t)io;
+                return (uint16_t) lf;
+            }
+        }
+    }
+    return 0;
+}
+
 // exported data is:
 // nbcomp
 // ramdic
@@ -221,10 +253,10 @@ public:
     } // end of compile
     void compress( const vector<uint8_t> &vmem, uint16_t adr, uint16_t l, vector<uint8_t> &comp )
     {
-        if(_bin.size()==0)
+       /* if(_bin.size()==0)
         {
             throw runtime_error("compile before compress");
-        }
+        }*/
         // first let jump to next
         comp.push_back( 0);
         comp.push_back( 0);
@@ -234,13 +266,19 @@ public:
         comp.push_back( (uint8_t) (adrw & 255));
         comp.push_back( (uint8_t) ((adrw>>8) & 255));
 
+        struct CopyPart {
+            uint32_t _indexInComp;
+            vector<uint8_t> _v;
+        };
+        vector<CopyPart> copyParts;
+
         //note for size repair: 1 charset: 256*8=2kb ->11bits 4k dico 12b
 
         // 1b gives the 4 next chunk types 4x 2b()->next 4 chunk
         // 0-> 1b n bytes (1,256), 1b value
     #define CD_MEMSET 0
     #define CD_COPY 1
-    #define CD_DICO1 2
+    #define CD_REINDEX 2
     #define CD_DICO2 3
         // 1-> 1b nbytes (1,256) , values to copy.
         // 2-> compr1 dico: 2b: 10b address /6b length, ->1kb, 64b copy max
@@ -249,6 +287,8 @@ public:
         uint16_t i=0;
         int byteTypepart=0;
         uint8_t bpart=0;
+
+uint16_t accumstatreindex=0;
 
         size_t flagsAdress = comp.size();
         comp.push_back(0);
@@ -271,7 +311,6 @@ public:
                 //..
                 comp.push_back(lleft-1);
                 for(uint16_t j=0;j<lleft;j++) comp.push_back(vmem[adr+i+j]);
-
                 bpart >>=2;
                 bpart |= (CD_COPY<<6);
                 byteTypepart++;
@@ -315,12 +354,98 @@ public:
             }
              cout << "dist to next:" << (inext-i)<< endl;
             if(inext==i) continue; // no copy , fill to fill.
-            //  do copy between
+
+            uint16_t il = inext-i;
+            if(il>256) il=256;
+
+            // test if something existed in the previous bytes...
+            int bigparts=0;
+            for(size_t cpi=0;cpi<copyParts.size();cpi++)
             {
-                uint16_t il = inext-i;
-                if(il>256) il=256;
+                CopyPart &cp = copyParts[cpi];
+                if(cp._v.size()>=8) bigparts++;
+            }
+
+            if(il>4 && copyParts.size()>0 &&
+                !(bigparts<32 && il>=8 ) )
+            {
+
+                vector<uint8_t> vtocomp(il);
+                for(size_t ip=0;ip<il;ip++) vtocomp[ip]=vmem[adr+i+ip];
+
+                // form: 2 bytes:  sub index + length
+                // if have 11b index (2048b), ->5 length (1->33b)
+                // find possible (copy chunk, then re-index)
+                // or direct re-index
+
+                    uint16_t bestfoundl=0;
+                    int16_t bestfoundirev=0;
+                    uint16_t bestfoundInOrig=0;
+                    // search if these 3 exists before
+                    for(size_t cpi=0;cpi<copyParts.size();cpi++ )
+                    {
+                        CopyPart &cp = copyParts[cpi];
+                        if(cp._v.size()<3) continue;
+
+                        uint16_t  iInBase,iInOrig;
+                        uint16_t foundl = findVecInVec(cp._v,vtocomp,iInBase,iInOrig );
+                        if(foundl>4 ) // minimum
+                        {
+                            if(foundl>34) foundl=34; // 5 bit for length: 3->34
+
+                            int16_t irev =(int16_t)(cp._indexInComp+iInBase)- ((int16_t)comp.size()+2);
+                            if(irev>-2044 ) // index is marked
+                            {
+                                if(foundl>bestfoundl)
+                                {
+                                    bestfoundl = foundl;
+                                    bestfoundirev = irev;
+                                    bestfoundInOrig = iInOrig;
+                                }
+                            }
+                        }
+
+                    } // loop per copyparts
+                    if(bestfoundl>0)
+                    {
+                        if(bestfoundInOrig>0)
+                        {
+                                il = bestfoundInOrig;
+                                // lead to COPY
+                                //goto ignoblejump;
+                        } else
+                        {
+                          //cout << "found reindex with l:" <<bestfoundl << " and index: " << bestfoundirev << endl;
+                          accumstatreindex += (bestfoundl-3);
+// 11 / 5
+                            uint16_t enc = ((((-bestfoundirev)))<<5)|(bestfoundl-3);
+                            // just 2b
+                            comp.push_back( (uint8_t)enc);
+                            comp.push_back( (uint8_t)(enc>>8));
+                            bpart >>=2;
+                            bpart |= (CD_REINDEX<<6);
+                            byteTypepart++;
+                            i+=bestfoundl;
+                            continue;
+                        }
+                          // CD_REINDEX
+                    }
+
+            } // end if search reindex
+
+            //  do copy between
+//ignoblejump:
+            {
+                copyParts.push_back(CopyPart());
+                CopyPart &cp = copyParts.back();
+
                 comp.push_back( (uint8_t)(il-1));
-                for(uint16_t j=0;j<il;j++) comp.push_back(vmem[adr+i+j]);
+                cp._indexInComp = (uint32_t)comp.size();
+                for(uint16_t j=0;j<il;j++)
+                {
+                  cp._v.push_back(vmem[adr+i+j]);
+                  comp.push_back(vmem[adr+i+j]);
+                }
 
                 cout << "push copy:" << (int)v << " l:" << il << endl;
 
@@ -384,6 +509,8 @@ public:
         comp[0] = (uint8_t)s ;
         comp[1] = (uint8_t)(s>>8) ;
 
+    cout << "accumstatreindex:" << accumstatreindex << endl;
+
     } // end compress()
 
     // for testing
@@ -424,7 +551,7 @@ public:
                 continue;
             }
             // else copy n
-            //re if((typeparts4 & 3)==CD_COPY) // copy
+            if((typeparts4 & 3)==CD_COPY) // copy
             {
                 uint16_t l = comp[i]; i++;
                 for(uint16_t j=0;j<=l;j++)
@@ -433,6 +560,27 @@ public:
                     adr++;
                 }
 
+                typeparts4>>=2;
+                typei++;
+                continue;
+            }
+            if((typeparts4 & 3)==CD_REINDEX) // copy
+            {
+                uint16_t enc = (uint16_t)comp[i] | (((uint16_t)comp[i+1])<<8);
+                i+=2;
+                uint16_t l = (enc & 31)+3;
+                int16_t delta=  (int16_t)(enc>>5) ;
+
+                for(uint16_t j=0;j<l;j++)
+                {
+                    vmem[adr] = comp[i-delta+j];
+                    adr++;
+                }
+ //                for(uint16_t j=0;j<=l;j++)
+//                {
+//                    vmem[adr]=comp[i]; i++;
+//                    adr++;
+//                }
                 typeparts4>>=2;
                 typei++;
                 continue;
@@ -447,8 +595,10 @@ void TMS_Compressor::compressGraphics2()
 {
 
     // compress images in ram table using dictionary
-    uint32_t nbchanges = _tms.normalize1To0();
-    nbchanges += _tms.normalizeForCompression();
+    uint32_t nbchanges = _tms.normalizeColor1To0();
+    nbchanges += _tms.normalizeColorForCompression();
+    _tms.toVerticalTiles();
+
     cout << "normalize bitmap nbchange: " << nbchanges << endl;
 
     const vector<uint8_t> &vmem= _tms.vmem();
@@ -456,9 +606,12 @@ void TMS_Compressor::compressGraphics2()
     CompressedDic bmDic;
   //  CompressedDic clDic;
     //CompressedVMemArea vma1;
+
+
     bmDic.feed(vmem,0, 1024*6);
     bmDic.feed(vmem,8*1024, 1024*6);
     bmDic.compile();
+
     //clDic.compile();
     //feedDic(vmem,dic,vma1, 0, 1024*6);
     //
