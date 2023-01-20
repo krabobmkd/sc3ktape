@@ -60,18 +60,13 @@ banks 1
 
 ;.bank 1 slot 1
 	;.org $9819
-	.org $9832
+	.org $9826
 testd:
 main:
 
     ; set up VDP registers
 ;re
-    di
-    ld hl,VDPInitData
-    ld b,VDPInitDataEnd-VDPInitData
-    ld c,VDPControl
-    otir
- 	ei
+
     ; load tiles (Background)
 ;    SetVDPAddress $0000 | VRAMWrite
 ;    ld hl,Bitmap
@@ -90,11 +85,15 @@ main:
 ;   ld hl,logo_cl_cdata
 ;    call decomp_to_dvp
 
-    ld hl,skull_bm_cdata
+	call vdp_setBlank
+
+    ld hl,bmcdata ;skull_bm_cdata
     call decomp_to_dvp
 
-   ld hl,skull_cl_cdata
+   ld hl,clcdata ;skull_cl_cdata
     call decomp_to_dvp
+
+	call vdp_set_screen2
 
  ;   ld hl,logo_cl_cdata
  ;   jp decomp_to_dvp
@@ -117,7 +116,22 @@ main:
 ;justafter:
 ;	call other ; calls adress are 2b absoluete according to org.
 	ret
-
+vdp_setBlank:
+	di
+		ld hl,VDPRegs_blank
+		ld b,VDPRegs_blank_end-VDPRegs_blank
+		ld c,VDPControl
+		otir
+	ei
+	ret
+vdp_set_screen2:
+	di
+		ld hl,VDPRegs_screen2
+		ld b,VDPRegs_screen2_end-VDPRegs_screen2
+		ld c,VDPControl
+		otir
+	ei
+	ret
 	;bc
 	;de
 	;hl
@@ -230,7 +244,7 @@ decomp_to_dvp:
 decomploop:
     ; compare ptr trick
 dc_writeendofdatahere:
-    ld bc,0    ;(tempdata+dc_dataend)
+    ld bc,0
     or a ; clear carry flag
     sbc hl,bc
     add hl,bc
@@ -286,8 +300,9 @@ dcmp_memset:
 	ld c,VDPData
 dcmp_msetloop:
 	out (c),a
-	dec b
-	jp NZ,dcmp_msetloop
+	;dec b
+	;jp NZ,dcmp_msetloop
+	djnz dcmp_msetloop
 	out (c),a  ; one more because b means [1,256]
 
     jp  decomploop
@@ -320,16 +335,20 @@ setDefaultTileName:
 ;                                       F0
 ;                           FF 03 7F   <-exerion chaneg reg5(sprite attribs base adr)
 ;elevatoraction: 02 E2 screen title, 02 82 when screen switch (switch off display & screen interupt)
-VDPInitData:
-.db $02,$80
-.db $E2,$81
-.db $11,$87 ; bg colors
+VDPRegs_screen2:
+	.db $02,$80
+	.db $E2,$81  ; 1110 0010     16k,enable display,enable vert. initerupt, large sprites
+	.db $11,$87 ; bg colors
 ;.db $14,$80,$00,$81,$ff,$82,$ff,$85,$ff,$86,$ff,$87,$00,$88,$00,$89,$ff,$8a
-VDPInitDataEnd:
+VDPRegs_screen2_end:
+VDPRegs_blank:
+	.db $00,$80
+	.db $80,$81 ; display off
+VDPRegs_blank_end:
 
 	;.include krb_mkd5.sc2.asm
-	.include krb_cyberskull.sc2.asm
-
+	;.include krb_cyberskull.sc2.asm
+	.include HABR0CON_by_Tutty.sc2.asm
 ; in basic tape mode, remaining ram data start is obviously here:
 tempdata:
 

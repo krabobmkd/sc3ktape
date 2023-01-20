@@ -16,15 +16,49 @@ void SC3KSoundAndBytes::soundToBytes(const std::vector<signed short> &soundVecto
     bitsToBytes();
 }
 
+std::string timeFromSample(uint64_t i,unsigned int freq)
+{
+    stringstream ss;
+    uint64_t nbs = i/freq;
+    uint64_t decs = i-(nbs*freq);
+    double frest = (double)decs/ (double)freq;
+    if(nbs>59)
+    {
+        uint64_t nbm = nbs/60;
+        nbs -= (nbm*60);
+        ss << nbm << "m " << nbs << "s ";
+    } else
+    {
+        ss << nbs << "s ";
+    }
+     ss << frest;
+     return ss.str();
+
+}
+
 void SC3KSoundAndBytes::soundToBits(const std::vector<signed short> &soundVector, unsigned int freq)
 {
     // average value that should fit frequency.
-    float freqdiv = (float)freq * (1.0f/44100.0f);
-    const unsigned int maxLengthForThisFreq =(unsigned int)( 32.0f * freqdiv);
-    const unsigned int middleLength = (unsigned int)(15.0f * freqdiv);
+    //float freqdiv = (float)freq * (1.0f/44100.0f);
+  //  const unsigned int maxLengthForThisFreq =(unsigned int)( 32.0f * freqdiv);
+  //  const unsigned int middleLength = (unsigned int)(15.0f * freqdiv);
 
-    cout << "maxLengthForThisFreq:"<< maxLengthForThisFreq << endl;
-    cout << "middleLength:"<< middleLength << endl;
+    // 2400Hz for one
+    // give perfect numbers for 44100 and 22050
+//    const uint64_t tapefreq = 2400*2; // *2 because need half wavelength length
+//    const uint64_t tapefreqS16 = tapefreq<<16;
+//    uint64_t samplePerWaveS16 = tapefreqS16 / freq;
+//    uint64_t freqrunS16=0;
+
+    uint32_t magfreq = (freq<<8);
+    uint32_t freqstep = (magfreq / (2400*2))>>8; // (1176 for 22050) // frq/4
+    uint32_t freqstep2 = (magfreq / (1200*2))>>8;
+    uint32_t midLength = (freqstep+ freqstep2)>>1;
+//    uint32_t idealLength1 = (uint32_t) (magstep>>8);
+
+    cout << "maxLengthForThisFreq:"<< freqstep << endl;
+   // cout << "middleLength:"<< middleLength << endl;
+
 
     if(soundVector.size()==0) return;
     // get min max
@@ -36,43 +70,134 @@ void SC3KSoundAndBytes::soundToBits(const std::vector<signed short> &soundVector
         if(s<vmin) vmin=s;
         if(s>vmax) vmax=s;
     }
+
+    enum sMode {
+        sm_SearchBusy=0,
+        sm_SearchFirstZero,
+        sm_Data
+    };
+
+    sMode busymode=sm_SearchBusy; // means search for new ones chain to synchrnoize, no data.
+
+
    // cout << "min: " << vmin << "  max: "<< vmax << endl;
     unsigned int lastSwapPos =0;
     bool lastSwapState = false;
     // log statelength
     // 1 as 0101 ,     0 as 0011
-    int lastZero=0;
+    int accumlong=0;
+    int accumshort=0;
     bool hasFirstZero=false;
+    unsigned int prevStateLength=0,stateLength=0;
+    uint64_t accumBusyStateLength=0;
+
     for(size_t i=0; i<soundVector.size() ; i++)
     {
         signed short s = soundVector[i];
-        signed short mind = s- vmin;
+        if(s>-512 && s<512) s=0;
+
+/*        signed short mind = s- vmin;
         signed short maxd = s- vmax;
         if(mind<0) mind=-mind;
         if(maxd<0) maxd=-maxd;
-        bool nearmax= (maxd<mind);
+        */
+//        bool nearmax= (maxd<mind);
+        bool nearmax = (s>0);
         if(nearmax != lastSwapState)
         {
-            unsigned int stateLength = i-lastSwapPos;
-         //   cout << "sl:"<< stateLength << endl;
-            if(stateLength<maxLengthForThisFreq && nearmax) // >: first found or empty data
-            {
-                if(stateLength<middleLength)
-                {
-                    // short need 2 pass
-                    lastZero++;
-                    if(lastZero==2)
-                    {
-                        if(hasFirstZero) m_streambits.push_back(1); // because long list of 1 at start are just void.
-                        lastZero=0;
-                    }
-                } else{
-                    m_streambits.push_back(0);
-                    hasFirstZero = true;
-                    lastZero = 0;
-                }
 
+            if(i-lastSwapPos<3 && busymode != sm_SearchBusy  ) // could be an error peak...
+            {
+                continue;
             }
+            prevStateLength = stateLength;
+            stateLength = i-lastSwapPos;
+
+
+            unsigned int curfreq = prevStateLength+stateLength;
+
+            if(curfreq>=freqstep2-2 && curfreq<=freqstep2+2)
+            {
+                accumBusyStateLength++;
+                if(accumBusyStateLength>1200)
+                {
+                    if(busymode != sm_SearchFirstZero)
+                    {
+                        busymode = sm_SearchFirstZero;
+                        cout << " busy found at: " << timeFromSample(i,freq) << endl;
+                    }
+                }
+            } else
+            {
+                // can be first zero
+//                if(busymode != sm_SearchBusy )
+//                {
+//                    cout << " busy mode lost at: " << timeFromSample(i,freq) << endl;
+//                }
+//                busymode = sm_SearchBusy;
+                accumBusyStateLength=0;
+            }
+
+         //   cout << "sl:"<< stateLength << endl;
+             if(busymode == sm_SearchFirstZero )
+             {
+                if(stateLength<freqstep2+3 && stateLength>freqstep-3) // >: first found or empty data
+                {
+                    if(stateLength>midLength)
+                    {
+                        if(!hasFirstZero)
+                        {
+                            cout << " found 0 at: " << timeFromSample(i,freq) << endl;
+
+                            // next routines wants its busy one lines before first zero...
+                            // let's set that magically
+                            for(int j=0;j<11;j++)  m_streambits.push_back(1);
+
+                        }
+                        hasFirstZero = true;
+                        accumlong = 0;
+                        accumshort = 0;
+                        busymode = sm_Data;
+                    }
+                }
+             }
+             if(busymode == sm_Data )
+             {
+                 if(stateLength<freqstep2+6 && stateLength>freqstep-3) // >: first found or empty data
+                 {
+                    if(stateLength<midLength)
+                    {
+                        accumlong=0;
+                        accumshort++;
+
+                        if(accumshort==4)
+                        {
+                            m_streambits.push_back(1); // because long list of 1 at start are just void.
+                            accumshort=0;
+                        }
+                    } else{
+                        accumlong++;
+                        accumshort=0;
+
+                        if(accumlong==2)
+                        {
+                            m_streambits.push_back(0); // because long list of 1 at start are just void.
+                            accumlong=0;
+                        }
+
+                    }
+
+                } else
+                {
+                    if(busymode != sm_SearchBusy)
+                    {
+                        cout << " lost data because of length:"<< stateLength<< " at: " << timeFromSample(i,freq) << endl;
+                        busymode=sm_SearchBusy;
+                        hasFirstZero = false;
+                    }
+                }
+             }
+
 
             lastSwapPos = i;
             lastSwapState = nearmax;
@@ -81,40 +206,8 @@ void SC3KSoundAndBytes::soundToBits(const std::vector<signed short> &soundVector
         }
     }
 
-    // test thing
-//    int nbcl=0;
-//    int nbch=0;
-//    bool hasfirstone=false;
-//    size_t firstOnePos=0;
-
-//    unsigned int nbcSinceFirstOne = 0;
-//    for(size_t j=0;j<m_streambits.size(); j++)
-//    {
-//       // if(nbcSinceFirstOne>400) break;
-//         if(m_streambits[j]>0)
-//         {
-//            hasfirstone = true;
-//            firstOnePos = j;
-//         }
-//        //if(hasfirstone)
-//        {
-//          //  cout << ((m_streambits[j]==0)?"0":"1") ;
-
-//            nbcl++;
-//            nbch++;
-//            nbcSinceFirstOne++;
-//            if(nbch==8) {
-//                nbch=0;
-//          //      cout << " ";
-//            }
-//            if(nbcl==40) {
-//                nbcl=0;
-//                cout << endl;
-//            }
-//        }
-//    }
-//    cout << endl;
 }
+
 void SC3KSoundAndBytes::bitsToBytes()
 {
     stringstream strreport;
@@ -130,9 +223,20 @@ void SC3KSoundAndBytes::bitsToBytes()
 
     // busy mode is that long one value chain at start used check file start on tape.
     bool busymode=true;
+    int conseqones=0;
     for(size_t j=0;j<m_streambits.size(); j++)
     {
         char b = m_streambits[j]; // 0,1
+        if(b!=0) conseqones++;
+        else conseqones=0;
+        if(conseqones>11 && !busymode)
+        {
+            // busy mode detected
+            busymode = true;
+            bc=0;
+            bytevalue=0;
+            bimask=1;
+        }
         if(bc==0) // 'start bit'
         {
             // must be zero.
@@ -147,6 +251,10 @@ void SC3KSoundAndBytes::bitsToBytes()
                 continue;
 
            //  strreport << "stream starter not 0 at byte:"<< (int)m_bytes.size()  << "\n";
+            } else
+            {
+                // could be fault in start of busy mode, bc still 0
+             //   continue;
             }
             bi = 0;
             bimask = 1;
@@ -186,7 +294,7 @@ void SC3KSoundAndBytes::bitsToBytes()
 
 
 /** convert bytes to external sound vector */
-void SC3KSoundAndBytes::bytesToSound(std::vector<signed short> &soundVector)
-{
+//void SC3KSoundAndBytes::bytesToSound(std::vector<signed short> &soundVector)
+//{
 
-}
+//}

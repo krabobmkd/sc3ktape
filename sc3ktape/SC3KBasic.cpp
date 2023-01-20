@@ -663,7 +663,7 @@ int SC3KBasic::readWave(std::istream &inputStream)
     parity =(unsigned char)(-(int)parity);
 
     unsigned char parityRead = (unsigned char)programTapeHead[programTapeHead.size()-3];
-    cout << "Parity check: " << (int)parity << "  parity read: " << parityRead << endl;
+    cout << "Parity check: " << (int)parity << "  parity read: " << (int) parityRead << endl;
     if(parityRead != parity)
     {
         cout << "Header parity issue !" << endl;
