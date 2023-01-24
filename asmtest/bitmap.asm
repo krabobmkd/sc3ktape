@@ -58,6 +58,40 @@ banks 1
     jp nz,-
 .endm
 
+
+.define joy_btA 0
+
+; a get: up1 down1 left1 right1 fl1 fr1 | up2 down2
+.macro CheckJoystick1
+    ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
+    out ($df),a ; pia_control register
+    ld a,$07 ; Y line
+    out($de),a ; pia_portC_output_y_kb
+    in($dc),a ; pia_portA_input_x
+.endm
+
+.macro CheckKb_space
+    ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
+    out ($df),a ; pia_control register
+    ld a,$01 ; Y line
+    out($de),a ; pia_portC_output_y_kb
+    in($dc),a ; pia_portA_input_x
+
+    cpl a
+    bit 4,a ; space
+
+.endm
+
+.macro CheckKb_break
+    ld a,$92    ; 1000 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
+    out ($df),a ; pia_control register
+    ld a,$06 ; Y line
+    out($de),a ; pia_portC_output_y_kb
+    in($dc),a ; pia_portA_input_x
+.endm
+
+
+
 ;.bank 1 slot 1
 	;.org $9819
 	.org $9826
@@ -90,10 +124,24 @@ main:
     ld hl,bmcdata ;skull_bm_cdata
     call decomp_to_dvp
 
-   ld hl,clcdata ;skull_cl_cdata
+    ld hl,clcdata ;skull_cl_cdata
     call decomp_to_dvp
 
 	call vdp_set_screen2
+
+mainloop:
+    ; wait til blank,
+
+    CheckJoystick1
+    ;bit joy_btA,a
+    cpl a ; not
+    and a,$ff ; test any
+    jp z,mainend
+
+
+
+    jp mainloop
+mainend:
 
  ;   ld hl,logo_cl_cdata
  ;   jp decomp_to_dvp

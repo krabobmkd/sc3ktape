@@ -18,6 +18,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
         SoundReader.h
         ../sc3kutils/SegaAsciiJpToUnicode.h
     )
+    add_executable(mekastateloader
+        mekastateloader.cpp
+    )
 
     message(STATUS "              ________  __     __")
     message(STATUS "  ______ ____ \\_____  \\|  | __/  |______  ______   ____ ")
