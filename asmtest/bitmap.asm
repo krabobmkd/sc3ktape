@@ -87,10 +87,12 @@ main:
 
 	call vdp_setBlank
 
-    ld hl,bmcdata ;skull_bm_cdata
+    ;ld hl,bmcdata ;skull_bm_cdata
+    ld hl,skull_bm_cdata
     call decomp_to_dvp
 
-   ld hl,clcdata ;skull_cl_cdata
+   ;ld hl,clcdata ;
+	ld hl,skull_cl_cdata
     call decomp_to_dvp
 
 	call vdp_set_screen2
@@ -347,8 +349,9 @@ VDPRegs_blank:
 VDPRegs_blank_end:
 
 	;.include krb_mkd5.sc2.asm
-	;.include krb_cyberskull.sc2.asm
-	.include HABR0CON_by_Tutty.sc2.asm
+	.include krb_cyberskull.sc2.asm
+	;.include HABR0CON_by_Tutty.sc2.asm
+	;.include mire.sc2.asm
 ; in basic tape mode, remaining ram data start is obviously here:
 tempdata:
 

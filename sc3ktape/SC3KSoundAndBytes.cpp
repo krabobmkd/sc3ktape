@@ -163,7 +163,8 @@ void SC3KSoundAndBytes::soundToBits(const std::vector<signed short> &soundVector
              }
              if(busymode == sm_Data )
              {
-                 if(stateLength<freqstep2+6 && stateLength>freqstep-3) // >: first found or empty data
+                 // note on freqstep2+8: some tapes are really like that.
+                 if(stateLength<freqstep2+8 && stateLength>(freqstep)>>1) // >: first found or empty data
                  {
                     if(stateLength<midLength)
                     {
@@ -224,6 +225,7 @@ void SC3KSoundAndBytes::bitsToBytes()
     // busy mode is that long one value chain at start used check file start on tape.
     bool busymode=true;
     int conseqones=0;
+
     for(size_t j=0;j<m_streambits.size(); j++)
     {
         char b = m_streambits[j]; // 0,1
@@ -243,19 +245,19 @@ void SC3KSoundAndBytes::bitsToBytes()
             if(b !=0)
             {
                 if(busymode) continue; // already in busy mode.
+
+
                 m_vbytes.push_back(vector<unsigned char>());
                 pvbytes = &(m_vbytes.back());
                 busymode=true;
 
-                cout << endl;
-                continue;
 
            //  strreport << "stream starter not 0 at byte:"<< (int)m_bytes.size()  << "\n";
-            } else
-            {
-                // could be fault in start of busy mode, bc still 0
-             //   continue;
+                cout <<  "i start should be 0 but found 1 at byte: " << j << endl;
+
+                 continue;
             }
+            // ok condition
             bi = 0;
             bimask = 1;
             bytevalue=0;
@@ -264,10 +266,21 @@ void SC3KSoundAndBytes::bitsToBytes()
         {
             if(b !=1)
             {
+                /*no
+                if(bc==10 &&
+                        j>3 && m_streambits[j-1]==1 &&  m_streambits[j-2]==1 )
+                {
+                    // let's try this correction:
+                    j--;
+
+                }*/
+
+                cout << "i end byte should be 1 but found 0 at byte: " << j << endl;
           //   strreport << "byte ender not 1 at byte:"<< (int)m_bytes.size()  << "\n";
             }
             if(bc==9)
             {
+
                 pvbytes->push_back(bytevalue);
              //   cout << hex << (int)bytevalue << endl;
             // cout  << setfill('0') << setw(2) << hex << (int)bytevalue << endl;
@@ -275,7 +288,7 @@ void SC3KSoundAndBytes::bitsToBytes()
                 bytevalue = 0;
             }
         } else
-        {
+        {   // bits of the byte.
             // build byte:
             if(b) bytevalue |= bimask;
             bimask <<=1;

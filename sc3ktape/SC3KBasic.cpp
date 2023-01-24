@@ -500,6 +500,7 @@ SC3KBasic::SC3KBasic()
     , _ProgramLength(0)
     , _ProgramStart(0)
     , m_isEuroAscii(false)
+    , m_bAddSpaces(true)
     , m_postBinaryLength(0)
 {
 
@@ -797,6 +798,10 @@ int SC3KBasic::readWave(std::istream &inputStream)
                     if(strf.length()>0)
                     {
                         m_basicStream << strf;
+//                        if(m_bAddSpaces && i<_ProgramLength-1 && programBin[i+1] != ' ' && programBin[i+1] != '(')
+//                        {
+//                            m_basicStream << " ";
+//                        }
                     }
                 } else
                 {
@@ -804,6 +809,10 @@ int SC3KBasic::readWave(std::istream &inputStream)
                     if(strf.length()>0)
                     {
                         m_basicStream << strf;
+//                        if(m_bAddSpaces && i<_ProgramLength-1 && programBin[i+1] != ' ' && programBin[i+1] != '(')
+//                        {
+//                            m_basicStream << " ";
+//                        }
                         if(c==REM_ID) parseMode= epm_Rem;
                     }
                 }

@@ -74,6 +74,7 @@ protected:
     std::vector< std::vector< unsigned char > > m_bytes;
 
     bool        m_isEuroAscii;
+    bool        m_bAddSpaces;
     int         m_postBinaryLength;
     std::string m_sourceBasePath;
 
