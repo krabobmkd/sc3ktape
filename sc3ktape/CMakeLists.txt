@@ -19,6 +19,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
         ../sc3kutils/SegaAsciiJpToUnicode.h
     )
 
+	add_executable(mekastateloader mekastateloader.cpp)
+
     message(STATUS "              ________  __     __")
     message(STATUS "  ______ ____ \\_____  \\|  | __/  |______  ______   ____ ")
     message(STATUS " /  ____/ ___\\  _(__  <|  |/ \\   __\\__  \\ \\____ \\_/ __ \\")

@@ -26,14 +26,10 @@ $(MEKASTATE): $(PROGNAME).bdbin
 	#OK Meka Linux:
 #	cat $(PROGNAME).bdbin | dd of=origstateLINUX.S00 bs=1 seek=6257 conv=notrunc
 #	cp origstateLINUX.S00 ~/SegaSC3000/Meka/meka/meka/Saves/Sega_BASIC_Level_3_V1_SC-3000.S00
+	mekastateloader ~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00 $(PROGNAME).bdbin
 
-; index dans S00
-	; 8160 -> $01d1 dedans 01dc start prog ? 
-	; 9800 -> $1871  3517
-
-
-	cat $(PROGNAME).bdbin | dd of=origstate.S00 bs=1 seek=3517 conv=notrunc
-	cp origstate.S00 ~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
+	#cat $(PROGNAME).bdbin | dd of=origstate.S00 bs=1 seek=3517 conv=notrunc
+	#cp origstate.S00 ~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
 	#OK Meka Windows	
 	#cat $(PROGNAME).bdbin | dd of=origstate.S00 bs=1 seek=6253 conv=notrunc
 	#cp origstate.S00 /c/Users/victo/Documents/segaa/mekaw-2019-12-13/Saves/Sega_BASIC_Level_3_V1_\(SC-3000\).S00
