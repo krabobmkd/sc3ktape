@@ -30,7 +30,7 @@ public:
     // return >0 if ok
     int readWave( std::istream &inputStream);
     //! will work in basic mode with writeWave()
-    int readBasic(std::istream &inputStream);
+    int readBasic(std::istream &inputStream,bool justCheckSize=false);
     //! -untested beta- will work in asm mode with writeWave()
     int readAsmBin(std::istream &inputStream);
 
@@ -69,6 +69,7 @@ protected:
     unsigned short _ProgramLength; // on tape for basic, on memory for ASM.
     unsigned short _ProgramStart; // ASM only, where program is copy-loaded and started.
 
+    unsigned short  _AfterBasicStart;
     std::stringstream m_basicStream;
     std::stringstream m_postBinaryStream; // optional extra binary after basic
 
@@ -81,7 +82,7 @@ protected:
 
     std::map<std::string,std::string> m_preproc_names;
 
-    void basicStreamToBytes( std::vector< std::vector<unsigned char> > &bytes);
+    void basicStreamToBytes( std::vector< std::vector<unsigned char> > &bytes,bool justCheckSize=false);
     void tapeWaveFromBytes(std::ostream &ofs,int bitsPerSamples=8,int wavefreq=22050);
     void tapeWaveFromBytes(
             std::vector<unsigned char> &wave,

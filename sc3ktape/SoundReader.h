@@ -42,7 +42,8 @@ class ASoundWriter
 {
 public:
     /** read signed short vector */
-    virtual void write(std::ostream &ofs, std::vector<unsigned char> &v,int freq) =0;
+    virtual void write8(std::ostream &ofs, std::vector<unsigned char> &v,int freq) =0;
+    virtual void write16(std::ostream &ofs, std::vector<signed short> &v,int freq) =0;
 };
 
 
@@ -75,7 +76,8 @@ class SoundWriter_Wave : public ASoundWriter
 {
 public:
     /** write signed short vector */
-    void write(std::ostream &ofs, std::vector<unsigned char> &v,int freq) override;
+    void write8(std::ostream &ofs, std::vector<unsigned char> &v,int freq) override;
+    void write16(std::ostream &ofs, std::vector<signed short> &v,int freq) override;
 };
 
 

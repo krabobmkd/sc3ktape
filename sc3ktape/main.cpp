@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         LOGI()<< ANSICOL_ORA <<"      \\/     \\/       \\/     \\/          \\/|__|        \\/\n";
         LOGI()<< ANSICOL_DEF <<"\n";
 
-        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9.1c 2022\n";
+        LOGI() << " Sega SC-3000 / SK1100 Tape-to-basic-to-tape converter v0.9.2c 2023\n";
         LOGI() << "   >sc3ktape file.wave -o basicfile.sc.bas  [options] convert wave to basic\n";
         LOGI() << "   >sc3ktape file.txt/.bas -o basicfile.wave [options] convert basic to wave\n";
         LOGI() << "   >sc3ktape file.bin -o file.wave [options] convert asm binary to wave\n";
@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
     bool lineIndexToLabels=false;
     bool toDumpBin = false;
     bool toBasicOffsetsInclude = false;
+    bool waves16le=false;
 
     string programName=endsWithbin?"BINARY":"BASIC"; // default.
 
@@ -132,7 +133,7 @@ int main(int argc, char *argv[])
         if(strarg == "-jp") jpCharset=true;
         if(strarg == "-tobdbin") toDumpBin=true;
         if(strarg == "-tobasicoffsets") toBasicOffsetsInclude=true;
-
+        if(strarg == "-waves16le") waves16le=true;
     }
 
     try {
@@ -192,10 +193,11 @@ int main(int argc, char *argv[])
             wr.setIsEuroAscii(!jpCharset);
             if(preprocs_names.size()>0) wr.setPreProcNames(preprocs_names);
 
-            wr.readBasic(inputstream);
+
 
             if(toDumpBin)
             {
+                 wr.readBasic(inputstream);
                 std::string bdbinVersion = inputfile + ".bdbin";
                 if(outputfile.size()>0) bdbinVersion = outputfile;
 
@@ -205,9 +207,10 @@ int main(int argc, char *argv[])
                 }
 
                 wr.writeDumpBin(outputStream);
-                LOGI() << "Basic Exported To Dump bin for $9800 : " << bdbinVersion << endl;
+                LOGI() << "Basic Exported To Dump bin : " << bdbinVersion << endl;
             } else if(toBasicOffsetsInclude)
             {
+                 wr.readBasic(inputstream,true);
                 if(outputfile.size() == 0) outputfile = "basicoffsets.i";
 
                 ofstream outputStream(outputfile.c_str(), ios::binary);
@@ -219,6 +222,7 @@ int main(int argc, char *argv[])
                 LOGI() << "Exported "<< outputfile<< " include with asm offsets." << endl;
             } else
             {
+                 wr.readBasic(inputstream);
                 std::string waveVersion = inputfile + ".wave";
                 if(outputfile.size()>0) waveVersion = outputfile;
 
@@ -227,7 +231,7 @@ int main(int argc, char *argv[])
                     throw runtime_error(string("can't save to : ")+waveVersion);
                 }
 
-                wr.writeWave(outputStream,programName);
+                wr.writeWave(outputStream,programName,waves16le?16:8,waves16le?44100:22050);
                 LOGI() << "Basic Exported To Tape Wave: " << waveVersion << endl;
             }
         }

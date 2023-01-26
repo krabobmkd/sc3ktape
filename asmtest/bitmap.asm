@@ -11,7 +11,16 @@
 
 ; set n,reg bit a 1
 ;res (reset) bit a zero
-; bit (btst , flag z) 
+; bit (btst , flag z)
+
+.include basicinit.basicoffsets.i
+
+
+; - - BasicLevel3 values
+.define blv3_u8_framecount $8b33
+
+.define blv3_f_wait_bc $3a03
+
 
 .memorymap
 defaultslot 0
@@ -21,21 +30,12 @@ slot 0 $0000
 ;slot 2 $8000
 .endme
 
-
 .rombankmap
 bankstotal 1
 banksize $ffff
 banks 1
 .endro
 
-
-; - - BasicLevel3 values
-.define blv3_u8_framecount $8b33
-
-.define blv3_f_wait_bc $3a03
-
-
-; - - -  hardware VDP
 .define VDPControl $bf
 .define VDPData $be
 .define VDPScanline $7e
@@ -65,7 +65,6 @@ banks 1
     or e
     jp nz,-
 .endm
-
 
 
 .define joy_btA 0
@@ -100,82 +99,46 @@ banks 1
     bit 0,a ; space
 .endm
 
-;.bank 1 slot 1
-	;.org $9819
-	.org $981c
+;first byte:
+.define sn7_ldt $80
+.define sn7_l_Chan0 %00000000
+.define sn7_l_Chan1 %00100000
+.define sn7_l_Chan2 %01000000
+.define sn7_l_Chan3 %01100000
+.define sn7_l_tVol  %00010000 ; will latch volume, else tone/noise
+.define sn7_l_lodatamask %00001111
+; second byte:
+.define sn7_d_hidatamask %00111111
+
+; If the currently latched register is a tone register then the low 6 bits of the byte (DDDDDD) are placed into the high 6 bits of the latched register.
+; tones are 6+4=10 bits
+
+
+	.org blv3start
 main:
 
 	call vdp_setBlank
 
     ;ld hl,bmcdata ;skull_bm_cdata
-;    ld hl,skull_bm_cdata
-;re    call decomp_to_dvp
+    ld hl,logo_bm_cdata
+    call decomp_to_dvp
 
    ;ld hl,clcdata ;
-;	ld hl,skull_cl_cdata
-;re    call decomp_to_dvp
+	ld hl,logo_cl_cdata
+    call decomp_to_dvp
 
 	call vdp_set_screen2
 
+
 mainloop:
-    ; wait til blank, Basic lv3 way
+;    ; wait til blank, Basic lv3 way
 	ld hl,blv3_u8_framecount
 	ld e,(hl)
 -:
 	ld a,(hl)
 	cp e
 	jp z,-
-; --- test switching colors during frame
-	ld a,$56
-	out (VDPControl),a
-	ld a,$87
-	out (VDPControl),a
 
-; - - -  - wait loop
-	; 1000 clignote
-	; 600
-	; 0400 tout rouge
-	ld hl,0
-	ld bc,$0080
--:
-	inc hl
-	or a ; clear carry flag
-	sbc hl,bc
-	add hl,bc
-
-	jp nz,-
-
-
-;- - test otir on BG
-	ld hl,VDPFloodBG
-	ld b,VDPFloodBG-VDPFloodBG_end
-	ld c,VDPControl
-	otir
-
-; --- test switching colors during frame
-	ld a,$11
-	out (VDPControl),a
-	ld a,$87
-	out (VDPControl),a
-
-	.repeat 16
-	nop
-	.endr
-	ld a,$23
-	out (VDPControl),a
-	ld a,$87
-	out (VDPControl),a
-
-
-;	ld a,$11
-;	out (VDPControl),a
-;	ld a,$87
-;	out (VDPControl),a
-;    CheckJoystick1
-;    ;bit joy_btA,a
-;    cpl  ; not a
-;    and a,$ff ; test any
-;    jp z,mainend
 
 	CheckKb_space
 	jp z,mainend
@@ -203,58 +166,6 @@ vdp_set_screen2:
 		otir
 	ei
 	ret
-	;bc
-	;de
-	;hl
-	;a
-	; ''indexé
-	; ix -> can be used for stack
-	; iy -> can be used for stack
-	; sp
-	; i 'interupt vector'
-
-;ADD A,im8
-;ADD A,reg8
-;ADD A,(reg16)
-;ADD HL,HL ou BC ou DE ou SP
-;ADD IX,BC ou DE ou IX ou SP
-;ADD IY,BC ou DE ou IY ou SP
-;SUB 5    ; équivalent à SUB A,5
-;SUB D    ; équivalent à SUB A,D
-;SUB (HL) ; équivalent à SUB A,(HL)
-
-; only can
-;add a,a
-;add a,b
-;add a,c
-;add a,d
-;add a,e
-;add a,h
-;add a,l
-;add a,ixh
-;add a,ixl
-;add a,iyh
-;add a,ixl
-;add a,(hl)
-;add a,(ix+n)
-;add a,(iy+n)
-;add a,n        ;8-bit constant
-
-;add hl,bc
-;add hl,de
-;add hl,hl
-;add hl,sp
-
-;add ix,bc
-;add ix,de
-;add ix,ix
-;add ix,sp
-
-;add iy,bc
-;add iy,de
-;add iy,iy
-;add iy,sp
-
 
 decomp_to_dvp:
 	; stack thing
@@ -341,7 +252,7 @@ dcmp_copy:
 	; - - -  - - copy - mean length is 1, special case
 	; note: otir will write "b" bytes to video adress set at begining of decomp.
 ;	ld c,VDPData
-	ld b,(hl)	
+	ld b,(hl)
 	inc hl
 	; a bit ugly test
 	inc b
@@ -409,33 +320,12 @@ VDPRegs_blank:
 	.db $80,$81 ; display off
 VDPRegs_blank_end:
 
-
-VDPFloodBG:
-	.db $11,$87
-	.db $22,$87
-	.db $33,$87
-	.db $44,$87
-	.db $55,$87
-	.db $55,$87
-	.db $55,$87
-	.db $66,$87
-	.db $77,$87
-	.db $88,$87
-	.db $99,$87
-	.db $aa,$87
-	.db $bb,$87
-	.db $cc,$87
-	.db $dd,$87
-	.db $ee,$87
-	.db $ff,$87
-VDPFloodBG_end:
-
-	;.include krb_mkd5.sc2.asm
+	.include krb_mkd5.sc2.asm
 	;.include krb_cyberskull.sc2.asm
 	;.include HABR0CON_by_Tutty.sc2.asm
 	;.include mire.sc2.asm
-; in basic tape mode, remaining ram data start is obviously here:
-tempdata:
+; in basic tape mode, remaining ram data start is obviously here: NO, its var base ! -> get 3 bytes further.
+;tempdata:
 
 ;testdata:
 ;	.db "CAN WO"

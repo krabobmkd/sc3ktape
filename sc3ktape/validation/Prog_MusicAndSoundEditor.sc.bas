@@ -104,7 +104,7 @@
 990 STOP
 
 1000 REM Edit music
-1010 CLS:PRINT "Edit Music.":PRlNT"-----------":PRINT:IF FLAG=0 THEN PRINT"Buffer Is empty."GOSUB 1140:GOTO 30 
+1010 CLS:PRINT "Edit Music.":PRINT"-----------":PRINT:IF FLAG=0 THEN PRINT"Buffer Is empty."GOSUB 1140:GOTO 30
 1020 PRINT "Freq bytes can only be changed, not"
 1030 PRINT "inserted. Use the";CHR$(&H8E);" key to change a ":PRINT "tone, else ";CHR$(&H8F);" key to move to the next":PRINT "tone, and CR to abort."
 1040 FOR ZB=1 TO 255

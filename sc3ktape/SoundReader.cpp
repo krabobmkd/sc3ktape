@@ -158,7 +158,7 @@ void SoundReader_Wave::read(SoundVector &soundVector,std::istream &filestream)
 
 }
 /** write signed short vector */
-void SoundWriter_Wave::write(std::ostream &ofs, std::vector<unsigned char> &v,int freq)
+void SoundWriter_Wave::write8(std::ostream &ofs, std::vector<unsigned char> &v,int freq)
 {
     struct MiniHeader {
         unsigned int _ChunkId;
@@ -207,6 +207,58 @@ void SoundWriter_Wave::write(std::ostream &ofs, std::vector<unsigned char> &v,in
     ofs.write((const char *)&v[0],v.size());
 
 }
+
+/** write signed short vector */
+void SoundWriter_Wave::write16(std::ostream &ofs, std::vector<signed short> &v,int freq)
+{
+    struct MiniHeader {
+        unsigned int _ChunkId;
+        unsigned int _ChunkSize;
+    };
+
+    struct Header {
+        unsigned int _ChunkId;
+        unsigned int _ChunkSize;
+        unsigned int _Format;
+
+    };
+    Header header;
+    header._ChunkId =  CHUNKID('R','I','F','F');
+    header._ChunkSize = sizeof(header) +
+
+                        sizeof(MiniHeader)+
+                        sizeof(TypeHeader)+
+
+                        sizeof(MiniHeader)+
+                        v.size()*2 -8
+                            ;
+    header._Format =  CHUNKID('W','A','V','E');
+    ofs.write((const char *)&header,sizeof(header));
+
+    MiniHeader mhd1;
+    TypeHeader typeH;
+
+    mhd1._ChunkId = CHUNKID('f','m','t',' ');
+    mhd1._ChunkSize = sizeof(TypeHeader);
+    typeH._AudioFormat = 1;
+    typeH._NumChannels = 2;
+    typeH._SampleRate = freq;
+    typeH._byteRate = freq*4; //?
+    typeH._blockAlign = 1; //?
+    typeH._BitsPerSample = 16;
+
+    ofs.write((const char *)&mhd1,sizeof(mhd1));
+    ofs.write((const char *)&typeH,sizeof(typeH));
+
+    MiniHeader mhd2;
+    mhd2._ChunkId = CHUNKID('d','a','t','a');
+    mhd2._ChunkSize = (int)v.size()*2;
+
+    ofs.write((const char *)&mhd2,sizeof(mhd2));
+    ofs.write((const char *)&v[0],v.size()*2);
+
+}
+
 
 SoundReaderBroker::SoundReaderBroker()
 {
