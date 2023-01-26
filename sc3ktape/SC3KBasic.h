@@ -37,6 +37,7 @@ public:
     int writeBasic(std::ostream &outputStream);
     int writeWave(std::ostream &outputStream,std::string progName,int bitsPerSample=8, int freq=22050);
     int writeDumpBin(std::ostream &outputStream);
+    int writeAsmIncludeWithOffsets(std::ostream &outputStream);
 
     //! optional after writeBasic
     inline bool hasPostBinary() const { return m_postBinaryLength>0; }

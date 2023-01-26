@@ -131,7 +131,7 @@ mainloop:
 	ld a,$87
 	out (VDPControl),a
 
-; - - -  -
+; - - -  - wait loop
 	; 1000 clignote
 	; 600
 	; 0400 tout rouge
@@ -145,6 +145,12 @@ mainloop:
 
 	jp nz,-
 
+
+;- - test otir on BG
+	ld hl,VDPFloodBG
+	ld b,VDPFloodBG-VDPFloodBG_end
+	ld c,VDPControl
+	otir
 
 ; --- test switching colors during frame
 	ld a,$11
@@ -402,6 +408,27 @@ VDPRegs_blank:
 	.db $00,$80
 	.db $80,$81 ; display off
 VDPRegs_blank_end:
+
+
+VDPFloodBG:
+	.db $11,$87
+	.db $22,$87
+	.db $33,$87
+	.db $44,$87
+	.db $55,$87
+	.db $55,$87
+	.db $55,$87
+	.db $66,$87
+	.db $77,$87
+	.db $88,$87
+	.db $99,$87
+	.db $aa,$87
+	.db $bb,$87
+	.db $cc,$87
+	.db $dd,$87
+	.db $ee,$87
+	.db $ff,$87
+VDPFloodBG_end:
 
 	;.include krb_mkd5.sc2.asm
 	;.include krb_cyberskull.sc2.asm

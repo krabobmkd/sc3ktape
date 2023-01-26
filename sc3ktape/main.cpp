@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
     bool jpCharset=false;
     bool lineIndexToLabels=false;
     bool toDumpBin = false;
+    bool toBasicOffsetsInclude = false;
 
     string programName=endsWithbin?"BINARY":"BASIC"; // default.
 
@@ -130,6 +131,8 @@ int main(int argc, char *argv[])
         }
         if(strarg == "-jp") jpCharset=true;
         if(strarg == "-tobdbin") toDumpBin=true;
+        if(strarg == "-tobasicoffsets") toBasicOffsetsInclude=true;
+
     }
 
     try {
@@ -203,6 +206,17 @@ int main(int argc, char *argv[])
 
                 wr.writeDumpBin(outputStream);
                 LOGI() << "Basic Exported To Dump bin for $9800 : " << bdbinVersion << endl;
+            } else if(toBasicOffsetsInclude)
+            {
+                if(outputfile.size() == 0) outputfile = "basicoffsets.i";
+
+                ofstream outputStream(outputfile.c_str(), ios::binary);
+                if(!outputStream.good()) {
+                    throw runtime_error(string("can't save to : ")+outputfile);
+                }
+
+                wr.writeAsmIncludeWithOffsets(outputStream);
+                LOGI() << "Exported "<< outputfile<< " include with asm offsets." << endl;
             } else
             {
                 std::string waveVersion = inputfile + ".wave";
