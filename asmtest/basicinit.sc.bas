@@ -1,4 +1,3 @@
-10 screen 2,2
-20 call %BINREF
-30 goto 30
-40 incbin $(BINOBJ)
+1 screen 2,2
+2 call %BINREF
+3 incbin $(BINOBJ)

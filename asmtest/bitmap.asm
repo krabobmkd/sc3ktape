@@ -28,6 +28,14 @@ banksize $ffff
 banks 1
 .endro
 
+
+; - - BasicLevel3 values
+.define blv3_u8_framecount $8b33
+
+.define blv3_f_wait_bc $3a03
+
+
+; - - -  hardware VDP
 .define VDPControl $bf
 .define VDPData $be
 .define VDPScanline $7e
@@ -67,18 +75,18 @@ banks 1
     ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
     out ($df),a ; pia_control register
     ld a,$07 ; Y line
-    out($de),a ; pia_portC_output_y_kb
-    in($dc),a ; pia_portA_input_x
+    out ($de),a ; pia_portC_output_y_kb
+    in a,($dc) ; pia_portA_input_x
 .endm
 
 .macro CheckKb_space
     ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
     out ($df),a ; pia_control register
     ld a,$01 ; Y line
-    out($de),a ; pia_portC_output_y_kb
-    in($dc),a ; pia_portA_input_x
+    out ($de),a ; pia_portC_output_y_kb
+    in a,($dc) ; pia_portA_input_x
 
-    cpl a
+    ;cpl a
     bit 4,a ; space
 
 .endm
@@ -87,40 +95,86 @@ banks 1
     ld a,$92    ; 1000 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
     out ($df),a ; pia_control register
     ld a,$06 ; Y line
-    out($de),a ; pia_portC_output_y_kb
-    in($dc),a ; pia_portA_input_x
+    out ($de),a ; pia_portC_output_y_kb
+    in a,($dd) ; pia_portB_input_x
+    bit 0,a ; space
 .endm
 
 ;.bank 1 slot 1
 	;.org $9819
-	.org $9826
+	.org $981c
 main:
 
 	call vdp_setBlank
 
     ;ld hl,bmcdata ;skull_bm_cdata
-    ld hl,skull_bm_cdata
-    call decomp_to_dvp
+;    ld hl,skull_bm_cdata
+;re    call decomp_to_dvp
 
    ;ld hl,clcdata ;
-	ld hl,skull_cl_cdata
-    call decomp_to_dvp
+;	ld hl,skull_cl_cdata
+;re    call decomp_to_dvp
 
 	call vdp_set_screen2
 
 mainloop:
-    ; wait til blank,
-    .repeat 4
-    nop
-    .endr
+    ; wait til blank, Basic lv3 way
+	ld hl,blv3_u8_framecount
+	ld e,(hl)
+-:
+	ld a,(hl)
+	cp e
+	jp z,-
+; --- test switching colors during frame
+	ld a,$56
+	out (VDPControl),a
+	ld a,$87
+	out (VDPControl),a
 
-    CheckJoystick1
-    ;bit joy_btA,a
-    cpl a ; not
-    and a,$ff ; test any
-    jp z,mainend
+; - - -  -
+	; 1000 clignote
+	; 600
+	; 0400 tout rouge
+	ld hl,0
+	ld bc,$0080
+-:
+	inc hl
+	or a ; clear carry flag
+	sbc hl,bc
+	add hl,bc
+
+	jp nz,-
 
 
+; --- test switching colors during frame
+	ld a,$11
+	out (VDPControl),a
+	ld a,$87
+	out (VDPControl),a
+
+	.repeat 16
+	nop
+	.endr
+	ld a,$23
+	out (VDPControl),a
+	ld a,$87
+	out (VDPControl),a
+
+
+;	ld a,$11
+;	out (VDPControl),a
+;	ld a,$87
+;	out (VDPControl),a
+;    CheckJoystick1
+;    ;bit joy_btA,a
+;    cpl  ; not a
+;    and a,$ff ; test any
+;    jp z,mainend
+
+	CheckKb_space
+	jp z,mainend
+	CheckKb_break
+	jp z,mainend
 
     jp mainloop
 mainend:
@@ -350,7 +404,7 @@ VDPRegs_blank:
 VDPRegs_blank_end:
 
 	;.include krb_mkd5.sc2.asm
-	.include krb_cyberskull.sc2.asm
+	;.include krb_cyberskull.sc2.asm
 	;.include HABR0CON_by_Tutty.sc2.asm
 	;.include mire.sc2.asm
 ; in basic tape mode, remaining ram data start is obviously here:
