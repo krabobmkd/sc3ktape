@@ -16,8 +16,11 @@ $(PROGNAME).bin: $(PROGNAME).o
 	echo $(PROGNAME).o>>wlalinkfile
 	wlalink -b wlalinkfile $@
 
+$(PROGNAME).basicoffsets.i: basicinit.sc.bas
+	sc3ktape basicinit.sc.bas -tobasicoffsets -o $<
+
 $(PROGNAME).bdbin: $(PROGNAME).bin
-	sc3ktape basicinit.sc.bas -tobdbin -o $(PROGNAME).bdbin -DBINOBJ=$(PROGNAME).bin
+	sc3ktape basicinit.sc.bas -tobdbin -o $< -DBINOBJ=$(PROGNAME).bin
 $(PROGNAME).wav: $(PROGNAME).bin	
 	sc3ktape basicinit.sc.bas -o $(PROGNAME).wav -DBINOBJ=$(PROGNAME).bin
 
