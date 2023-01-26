@@ -110,6 +110,11 @@ banks 1
 ; second byte:
 .define sn7_d_hidatamask %00111111
 
+; Tone registers DDDDDDdddd :  gives the 10-bit half-wave counter reset value.
+; Volume registers (DDDDDD)dddd = (--vvvv)vvvv
+; noise register: (DDDDDD)dddd = (---trr)-trr
+
+
 ; If the currently latched register is a tone register then the low 6 bits of the byte (DDDDDD) are placed into the high 6 bits of the latched register.
 ; tones are 6+4=10 bits
 
