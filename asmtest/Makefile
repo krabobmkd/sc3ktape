@@ -1,15 +1,26 @@
 
 ASM=wla-z80
 
-PROGNAME=bitmap
-ASMFLAGS=-v 
+#PROGNAME=bitmap
+PROGNAME=demo
+#PSGSONG=SonicGreenHill.psg
+PSGSONG=SpaceHarrier09Syura.psg
+#PSGSONG=Ghostbusters.psg
+
+#CHARSET=aeg_collection_03.charset
+CHARSET=aeg_collection_11.charset
+#CHARSET=craze_dreams.charset
+# CHARSET=c7up.charset
+
+# 
+
+ASMFLAGS=-v -D SONG_FILE=$(PSGSONG) -D CHARSET=$(CHARSET) -I.
 MEKASTATE=~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
 BASICINIT=basicinit.sc.bas
-# -I.
-
+ 
 all: $(PROGNAME).bin $(PROGNAME).bdbin $(MEKASTATE)
 
-%.o: %.asm basicinit.basicoffsets.i
+%.o: %.asm basicinit.basicoffsets.i decomp.asm linescroll.asm $(PSGSONG) $(CHARSET)
 	$(ASM) $(ASMFLAGS) -o $@ $<
 
 %.basicoffsets.i: %.sc.bas 
@@ -17,22 +28,35 @@ all: $(PROGNAME).bin $(PROGNAME).bdbin $(MEKASTATE)
 	sc3ktape $< -tobasicoffsets -o $@ 
 	cat $@
 	
-$(PROGNAME).bin: $(PROGNAME).o 
+$(PROGNAME).bin: $(PROGNAME).o $(PSGSONG)
 	echo [objects]>wlalinkfile
 	echo $(PROGNAME).o>>wlalinkfile
-	wlalink -b wlalinkfile $@
+	wlalink -b -S wlalinkfile $@
 
 $(PROGNAME).bdbin: $(PROGNAME).bin $(BASICINIT)
 	sc3ktape $(BASICINIT) -tobdbin -o $@ -DBINOBJ=$(PROGNAME).bin
 $(PROGNAME).wav: $(PROGNAME).bin $(BASICINIT)
 	sc3ktape $(BASICINIT) -o $(PROGNAME).wav -DBINOBJ=$(PROGNAME).bin -waves16le
-	
-play: $(PROGNAME).wav
-	aplay --device front:CARD=ICUSBAUDIO7D,DEV=0 $(PROGNAME).wav
 
+# - -  load program as cassette audio to machine, using linux USB audio card
+play: play_$(PROGNAME)
+
+play_%: %.wav
+	aplay --device front:CARD=ICUSBAUDIO7D,DEV=0 $<
+
+# - - insert program into meka emulator basic rom state file, to run with load state.
 $(MEKASTATE): $(PROGNAME).bdbin
 	# copy bdbin inside Meka emu's state in a basiscLevelIII saved state.
 	mekastateloader $(MEKASTATE) $(PROGNAME).bdbin
 
+# - - - charset
+%.charset: charsets/%.64c
+	# 64 chars ->512
+	#dd skip=2 count=512 if=$< of=$@ bs=1
+	c64charsettoascii $@ $< charsets/c7up.64c
+# - - - - music things
+%.psg: %.vgm
+	java -jar /usr/local/share/java/PSGTool.jar $< $@  -framerate 60
+	# -uncompressed
 clean: 
-	rm -rf *.bin *.o *.bdbin wlalinkfile
+	rm -rf *.bin *.o *.bdbin *.psg wlalinkfile *.charset *.sym *.basicoffsets.i

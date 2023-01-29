@@ -20,6 +20,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
     )
 
 	add_executable(mekastateloader mekastateloader.cpp)
+	add_executable(c64charsettoascii c64charsetToAscii64.cpp)
+	add_executable(mathtables mathtables.cpp)
 
     message(STATUS "              ________  __     __")
     message(STATUS "  ______ ____ \\_____  \\|  | __/  |______  ______   ____ ")

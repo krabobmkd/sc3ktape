@@ -3,7 +3,7 @@
 logo_bm_cdata:
 	.db $35,$3,$0,$40
 	.db $0
-	.db $ff,$1,$ff,$2,$ff,$3,$ff,$4
+	.db $ff,$0,$ff,$0,$ff,$0,$ff,$0
 	.db $0
 	.db $ff,$0,$ff,$0,$ff,$0,$66,$0
 	.db $11
