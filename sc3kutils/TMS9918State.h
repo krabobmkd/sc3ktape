@@ -15,8 +15,11 @@ namespace vchip {
         void graphics2BitmapClear(); // just clear graphics2 bitmap area.
         // switch bits if needed, multipaint does nasty things sometimes
 
-        uint32_t normalize1To0();
-        uint32_t normalizeForCompression();
+        uint32_t normalizeColor1To0();
+        uint32_t normalizeColorForCompression();
+
+        uint32_t normalizeHorizontalTiles(); // for mode2
+        uint32_t toVerticalTiles(); // for mode2
 
         void updateRender();
 

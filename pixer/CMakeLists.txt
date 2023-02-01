@@ -16,7 +16,7 @@ endif()
 
     #   find_package(jsoncpp)
     # message( STATUS "**WOOT:${SDL2_INCLUDE_DIRS}")
-    include_directories(../sc3kutils ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} )
+    include_directories(../sc3kutils ./cruncher ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} )
 
     add_executable(pixer
         main.cpp
@@ -30,6 +30,8 @@ endif()
         ../sc3kutils/TMS9918_SC2Loader.h
         ../sc3kutils/TMS9918_SC3KExport.cpp
         ../sc3kutils/TMS9918_SC3KExport.h
+
+        ./cruncher/DataShrinkler.cpp
     )
 
 

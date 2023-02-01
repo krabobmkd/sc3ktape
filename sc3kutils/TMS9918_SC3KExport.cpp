@@ -452,15 +452,32 @@ public:
 
     }
 }; // end of Dic class
+
+extern  int compressData(const vector<uint8_t> &vdata, vector<uint8_t> & compressed);
+
+
 void TMS_Compressor::compressGraphics2()
 {
 
     // compress images in ram table using dictionary
-    uint32_t nbchanges = _tms.normalize1To0();
-    nbchanges += _tms.normalizeForCompression();
+    uint32_t nbchanges = _tms.normalizeColor1To0();
+    nbchanges += _tms.normalizeColorForCompression();
+   // _tms.toVerticalTiles();
     cout << "normalize bitmap nbchange: " << nbchanges << endl;
 
     const vector<uint8_t> &vmem= _tms.vmem();
+
+    vector<uint8_t> vbm(vmem.begin()+0,vmem.begin()+(6*1024));
+    vector<uint8_t> bm_comp;
+    int res = compressData(vbm,bm_comp);
+
+    vector<uint8_t> vcl(vmem.begin()+0x2000,vmem.begin()+(0x2000+6*1024));
+    vector<uint8_t> cl_comp;
+     res = compressData(vcl,cl_comp);
+   cout << "final size bm+cl:" <<(int)( bm_comp.size() + cl_comp.size()) << endl;
+
+
+/*
 
     CompressedDic bmDic;
   //  CompressedDic clDic;
@@ -474,13 +491,16 @@ void TMS_Compressor::compressGraphics2()
 
     bmDic.compress(vmem,0x0000,1024*6,_comp_bm);
     bmDic.compress(vmem,0x2000,1024*6,_comp_cl);
+// bmDic._bin.size() +
+    cout << "final size:" <<(int)( _comp_bm.size() + _comp_cl.size()) << endl;
 
-    cout << "final size:" <<(int)(/*bmDic._bin.size() +*/ _comp_bm.size() + _comp_cl.size()) << endl;
+
 
     // test decompress
     _tms.graphics2BitmapClear();
     bmDic.deCompress(_tms.vmem(),_comp_bm);
     bmDic.deCompress(_tms.vmem(),_comp_cl);
+    */
 
 }
 void TMS_Compressor::exportAsm(std::ostream &ofs, std::string labelName)

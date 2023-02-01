@@ -2,7 +2,7 @@
 .include sc3k.i
 .include basicinit.basicoffsets.i
 
-.define do_music 1
+;.define do_music 1
 
 .memorymap
 defaultslot 0
@@ -61,6 +61,10 @@ main:
    ;ld hl,clcdata ;
 	ld hl,logo_cl_cdata
     call decomp_to_dvp
+
+
+	;test
+	call shrinkler_decrunch
 
 	call vdpcopy_color_line
 
@@ -166,6 +170,7 @@ memset:
 
 	; gfx decompression
 	.include decomp.asm
+	.include shrinkler_vdp.asm
 
 	.include linescroll.asm
 
