@@ -447,8 +447,10 @@ void TMS_Compressor::compressGraphics2()
 {
 
     // compress images in ram table using dictionary
-    uint32_t nbchanges = _tms.normalize1To0();
-    nbchanges += _tms.normalizeForCompression();
+    uint32_t nbchanges = _tms.normalizeColor1To0();
+    nbchanges += _tms.normalizeColorForCompression();
+    _tms.toVerticalTiles();
+
     cout << "normalize bitmap nbchange: " << nbchanges << endl;
 
     const vector<uint8_t> &vmem= _tms.vmem();

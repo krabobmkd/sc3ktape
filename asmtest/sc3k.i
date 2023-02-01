@@ -45,23 +45,23 @@
     out ($de),a ; pia_portC_output_y_kb
     in a,($dc) ; pia_portA_input_x
 .endm
-
+.define kb_portA $dc
 .define kb_portB $dd
 .define kb_portC $de
 
-.macro CheckKb args YLine portBorC XLineBit
+.macro CheckKb args YLine portAorB XLineBit
     ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
     out ($df),a ; pia_control register
     ld a,YLine ; Y line
-    out (portBorC),a ; pia_portC_output_y_kb
-    in a,($dc) ; pia_portA_input_x
+    out ($de),a ; pia_portC_output_y_kb
+    in a,(portAorB) ; pia_portA_input_x
 
     bit XLineBit,a ; space
 
 .endm
 
 .macro CheckKb_space
-	CheckKb 1 kb_portC 4
+	CheckKb 1 kb_portA 4
 
 ;    ld a,$92    ; 1001 0010 (write|b4:CtrlA|b3:CtrlC up|b1: CtrlB | b0: trlC low)
 ;    out ($df),a ; pia_control register

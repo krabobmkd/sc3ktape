@@ -96,7 +96,7 @@ void TMS9918State::updateRender()
        updateRender_Mode2();
     }
 }
-uint32_t TMS9918State::normalize1To0()
+uint32_t TMS9918State::normalizeColor1To0()
 {
     uint32_t nbChangedone=0;
     // just set to 0 when unified 8 pixels
@@ -125,7 +125,7 @@ uint32_t TMS9918State::normalize1To0()
     return nbChangedone;
 }
 // switch bits if needed, multipaint does nasty things sometimes
-uint32_t TMS9918State::normalizeForCompression()
+uint32_t TMS9918State::normalizeColorForCompression()
 {
     uint32_t nbChangedone=0;
     // just set to 0 when unified 8 pixels
@@ -159,6 +159,77 @@ uint32_t TMS9918State::normalizeForCompression()
     }
     return nbChangedone;
 }
+uint32_t TMS9918State::normalizeHorizontalTiles()
+{
+    return 0;
+}
+uint32_t TMS9918State::toVerticalTiles()
+{
+    uint32_t nbChangedone=0;
+    uint16_t nameTableBase =this->adress_NameTable();
+    uint16_t bmBase = 0x0000;
+    uint16_t clBase = 0x2000;
+    for(int ipart=0;ipart<3;ipart++)
+    {
+        uint8_t nw=0;
+
+        // copy state of previous names for this part
+        vector<uint8_t> newnames(256);
+        vector<uint8_t> newBm(32*8*8);
+        vector<uint8_t> newCl(32*8*8);
+
+        for( int ix=0 ; ix<32 ; ix++ )
+        {
+            for( int iy=0 ; iy<8 ; iy++ )
+            {
+                uint8_t nprev = _vmem[nameTableBase+ix+(iy<<5)];
+
+                if(nw != nprev)
+                {
+                    // mode2  fields
+                    uint16_t bmAdr =  (((uint16_t)nw)<<3);
+                    uint16_t clAdr =  (((uint16_t)nw)<<3);
+                    uint16_t bmprevAdr = bmBase + (((uint16_t)nprev)<<3);
+                    uint16_t clprevAdr = clBase + (((uint16_t)nprev)<<3);
+
+                    for(uint8_t j=0;j<8;j++) {
+                        newBm[bmAdr] =_vmem[bmprevAdr];
+                        newCl[clAdr] =_vmem[clprevAdr];
+
+                        bmAdr++;
+                        bmprevAdr++;
+                        clAdr++;
+                        clprevAdr++;
+                    }
+
+                   nbChangedone++;
+                }
+                // then change name
+                newnames[ix+(iy<<5)] = nw;
+
+                nw++;
+            }
+        }
+        // then apply
+        for(uint16_t i=0;i<32*8*8;i++) _vmem[bmBase+i]=newBm[i];
+        for(uint16_t i=0;i<32*8*8;i++) _vmem[clBase+i]=newCl[i];
+        for(uint16_t i=0;i<256;i++) _vmem[nameTableBase+i]=newnames[i];
+
+
+        nameTableBase += 256;
+        bmBase += 32*8*8; // +5+3+3=2kb
+        clBase += 32*8*8;
+    }
+
+    return nbChangedone;
+//            uint8_t bm = _vmem[screenBmShift+(n<<3)+yl]; // 8 2c pixels
+            // get the 2 colors not using tiling but yet char per char
+           // uint8_t cl = _vmem[0x2000+((xc+(yc<<5))<<3)+yl];
+//            uint8_t cl = _vmem[0x2000+screenBmShift+(n<<3)+yl];
+}
+
+
+
 void TMS9918State::updateRender_Mode2()
 {
     _pixelWidth = 256;

@@ -1,3 +1,3 @@
-1 screen 2,2
+1 rem WOOT WOOT
 2 call %BINREF
 3 incbin $(BINOBJ)

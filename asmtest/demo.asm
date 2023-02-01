@@ -54,6 +54,9 @@ main:
 	ld (dd_textptrstart),hl
 	ld (dd_textptr),hl
 
+
+;re?	call vdp_setVerticalNames
+
     ;ld hl,bmcdata ;skull_bm_cdata
     ld hl,logo_bm_cdata
     call decomp_to_dvp
@@ -123,6 +126,32 @@ vdp_set_screen2:
 		otir
 	ei
 	ret
+vdp_setVerticalNames:
+	; write to names
+	SetVDPAddress $3800 -1
+	ld c,VDPData ; used by out as port id.
+
+	ld d,3
+---
+	ld b,0
+--:
+	ld a,b
+	ld e,32
+-:
+	out (c),a
+	add a,8
+	dec e
+	jp nz,-
+
+	inc b
+	ld a,8
+	cp b
+	jp nz,--
+
+	dec d
+	jp nz,---
+
+	ret
 ; - - - - -
 ;reg0: 2:mode2
 ;reg1
@@ -142,6 +171,13 @@ vdp_set_screen2:
 VDPRegs_screen2:
 	.db $02,$80
 	.db $E2,$81  ; 1110 0010     16k,enable display,enable vert. initerupt, large sprites
+
+	.db $0E,$82
+	.db $ff,$83
+	.db $03,$84
+	.db $76,$85
+	.db $03,$86
+
 	.db $11,$87 ; bg colors
 ;.db $14,$80,$00,$81,$ff,$82,$ff,$85,$ff,$86,$ff,$87,$00,$88,$00,$89,$ff,$8a
 VDPRegs_screen2_end:
