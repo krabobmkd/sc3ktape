@@ -171,7 +171,7 @@ memset:
 
 	; music player source
 	.ifdef do_music
-	.include PSGLib_blv3.i
+	.include PSGLib_blv3.asm
 	.endif
 	; graphics
 	.include krb_mkd5.sc2.asm

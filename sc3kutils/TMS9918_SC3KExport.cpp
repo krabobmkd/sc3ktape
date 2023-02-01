@@ -113,7 +113,7 @@ public:
         // note l should be 2x6kb most of the time
         // only keep those whose score >1
 
-        for(uint16_t maxStreamLength=_minStreamLength; maxStreamLength<=256; maxStreamLength++ )
+        for(uint16_t maxStreamLength=_minStreamLength; maxStreamLength<=(32+3); maxStreamLength++ )
         {
             uint16_t iae = adr+l;
             for(uint16_t ia=adr ; ia<iae ; ia++ )
@@ -152,7 +152,14 @@ public:
                     if(sv.isSame(vmem,ib,sl)) occurences++;
                 }
                 if(occurences>1) {
-                    _streamScores[sv] = (occurences-1) * (uint32_t)sv._v.size();
+                    // -1 because dic is growing
+                    int32_t score = (int32_t)( (occurences-1) * (int32_t)sv._v.size());
+                    score -= occurences*3; // minus size of calls needed (actual 2.25)
+                    if(score>0)
+                    {
+                        _streamScores[sv] = (uint32_t) score;
+                    }
+                    // (occurences-1) * (uint32_t)sv._v.size();
                 }
             }
         }
@@ -211,12 +218,14 @@ public:
         }*/
         // final dic bin, longer chains at end
         _bin.clear();
+        uint32_t finalgain=0;
         for(int j=(int)sorted.size()-1;j>=0;j--)
         {
             StreamValues &strvl =sorted[j]._sv;
             _bin.insert(_bin.end(),strvl._v.begin(),strvl._v.end());
+            finalgain += sorted[j]._score;
         }
-        cout << "dic compiled size:" <<_bin.size() << endl;
+        cout << "dic compiled size:" <<_bin.size() << " gain expected:"<< finalgain << endl;
 
     } // end of compile
     void compress( const vector<uint8_t> &vmem, uint16_t adr, uint16_t l, vector<uint8_t> &comp )

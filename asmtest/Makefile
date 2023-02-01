@@ -12,10 +12,16 @@ CHARSET=aeg_collection_11.charset
 #CHARSET=craze_dreams.charset
 # CHARSET=c7up.charset
 
-# 
-
 ASMFLAGS=-v -D SONG_FILE=$(PSGSONG) -D CHARSET=$(CHARSET) -I.
-MEKASTATE=~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
+
+ifdef OS
+    MEKASTATE=/c/Users/victo/Documents/segaa/mekaw-2019-12-13/Saves/Sega_BASIC_Level_3_V1_\(SC-3000\).S00
+else
+   ifeq ($(shell uname), Linux)
+    MEKASTATE=~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
+   endif
+endif
+
 BASICINIT=basicinit.sc.bas
  
 all: $(PROGNAME).bin $(PROGNAME).bdbin $(MEKASTATE)

@@ -58,7 +58,7 @@ PSGPlayLoops:                     ; we want the song to loop a certain amount of
 PSGPlay:
   ld a,$1                         ; we want the song to loop forever
 +:ld (PSGLoopFlag),a
-  call PSGStop                    ; if there's a tune already playing, we should stop it!
+  call PSGStop                    ; if there' a tune already playing, we should stop it!
   ld (PSGMusicStart),hl           ; store the begin point of music
   ld (PSGMusicPointer),hl         ; set music pointer to begin of music
   ld (PSGMusicLoopPoint),hl       ; looppointer points to begin too
