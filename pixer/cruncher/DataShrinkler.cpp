@@ -22,9 +22,10 @@ int compressData(const vector<uint8_t> &vdata, vector<uint8_t> & compressed)
 {
 	DataFile* orig = new DataFile;
 	orig->loadbin(vdata);
+// min, max, default
+    int references=10000;
 
-    int references=1000;
-/*
+  /*
 
 	FlagParameter   data          ("-d", "--data",                                 argc, argv, consumed);
 	FlagParameter   bytes         ("-b", "--bytes",                                argc, argv, consumed);

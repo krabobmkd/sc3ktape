@@ -12,11 +12,13 @@ A decoder for the range coder.
 #include <algorithm>
 #include <vector>
 
+#include "Decoder.h"
+#include "assert.h"
+
 using std::fill;
 using std::vector;
 
-#include "Decoder.h"
-#include "assert.h"
+
 
 #ifndef ADJUST_SHIFT
 #define ADJUST_SHIFT 4

@@ -61,6 +61,7 @@ The entropy coder defines the final compressed data contents.
 
 #pragma once
 
+#include "assert.h"
 #include "Coder.h"
 
 class LZState {

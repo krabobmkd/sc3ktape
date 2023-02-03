@@ -64,7 +64,8 @@ main:
 
 
 	;test
-	call shrinkler_decrunch
+
+	call shrinkler_decrunch_ram
 
 	call vdpcopy_color_line
 
@@ -186,6 +187,59 @@ musicdata:
 		.incbin SONG_FILE
 musicdata_end:
 	.endif
+
+basicdump_save:
+	ld ix,basiclevel3dumpadr
+	ld de,dd_basicdump
+	ld a,(basiclevel3dumpadrEnd-basiclevel3dumpadr)/3
+	ld b,0 ; because ldir
+-:
+	ld hl,(ix+0)
+	ld c,(ix+2)
+	add ix,3
+
+	ldir ; Repeats LDI (LD (DE),(HL), then increments DE, HL, and decrements BC) until BC=0. N
+
+	dec a
+	jp nz,-
+
+
+	ret
+basicdump_load:
+
+	ld ix,basiclevel3dumpadr
+	ld hl,dd_basicdump
+	ld a,(basiclevel3dumpadrEnd-basiclevel3dumpadr)/3
+-:
+	ld de,(ix+0)
+	ld c,(ix+2)
+	add ix,3
+
+	ldir ; Repeats LDI (LD (DE),(HL), then increments DE, HL, and decrements BC) until BC=0. N
+
+	dec a
+	jp nz,-
+
+
+	ret
+
+basiclevel3dumpadr:
+	.dw $8000
+	.db	24
+	.dw $8160
+	.db 24+2	; basic start pointers
+	.dw $8270
+	.db (3*16)+2
+	.dw $84a0
+	.db 16
+	.dw $85a0+3
+	.db 2
+	.dw $86e6
+	.db 16+2
+basiclevel3dumpadrEnd:
+
+.define blv3_basic_dump_size (24+24+2+(3*16)+2+16+2+16+2) ; 136b copied to make place to 2.5kb
+
 	; note there should a charset in lv3b rom !
 ext_charset:
 	.incbin CHARSET
@@ -223,6 +277,9 @@ bin_end:
 		dd_newcharcount db ; each 8 pixels give new char
 		dd_textptrstart	dw ; char index in text to reset at start
 		dd_textptr	dw ; char index in text
+
+		dd_basicdump ds blv3_basic_dump_size
+
 		; - - - -
 		;keep at end to get size:
 		dd_demodataend db

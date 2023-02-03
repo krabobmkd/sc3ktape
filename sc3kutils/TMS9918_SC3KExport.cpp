@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
+#include <fstream>
 using namespace std;
 using namespace vchip;
 
@@ -468,13 +469,27 @@ void TMS_Compressor::compressGraphics2()
     const vector<uint8_t> &vmem= _tms.vmem();
 
     vector<uint8_t> vbm(vmem.begin()+0,vmem.begin()+(6*1024));
+    
     vector<uint8_t> bm_comp;
     int res = compressData(vbm,bm_comp);
 
-    vector<uint8_t> vcl(vmem.begin()+0x2000,vmem.begin()+(0x2000+6*1024));
-    vector<uint8_t> cl_comp;
-     res = compressData(vcl,cl_comp);
-   cout << "final size bm+cl:" <<(int)( bm_comp.size() + cl_comp.size()) << endl;
+
+// C:/Users/victo/Documents/agit/sc3ktape/asmtest/SpaceHarrier09Syura.psg
+    ifstream ifspsg("C:/Users/victo/Documents/agit/sc3ktape/asmtest/Ghostbusters.psg",ios::binary | ios::in);
+
+    // SonicGreenHill.psg
+
+    ifspsg.seekg(0,ios::end);
+    long long bsize = (long long)ifspsg.tellg();
+    ifspsg.seekg(0,ios::beg);
+    vector<uint8_t> vpsg(bsize,0);
+    ifspsg.read((char*)vpsg.data(),bsize);
+
+    res = compressData(vpsg,bm_comp);
+
+  //  vector<uint8_t> cl_comp;
+  //   res = compressData(vcl,cl_comp);
+ //  cout << "final size bm+cl:" <<(int)( bm_comp.size() + cl_comp.size()) << endl;
 
 
 /*

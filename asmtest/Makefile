@@ -16,9 +16,11 @@ ASMFLAGS=-v -D SONG_FILE=$(PSGSONG) -D CHARSET=$(CHARSET) -I.
 
 ifdef OS
     MEKASTATE=/c/Users/victo/Documents/segaa/mekaw-2019-12-13/Saves/Sega_BASIC_Level_3_V1_\(SC-3000\).S00
+    PSGTOOLSPATH=.
 else
    ifeq ($(shell uname), Linux)
     MEKASTATE=~/SegaSC3000/Meka/meka/meka/Saves/SegaBASICLevel3.S00
+    PSGTOOLSPATH=/usr/local/share/java
    endif
 endif
 
@@ -62,7 +64,7 @@ $(MEKASTATE): $(PROGNAME).bdbin
 	c64charsettoascii $@ $< charsets/c7up.64c
 # - - - - music things
 %.psg: %.vgm
-	java -jar /usr/local/share/java/PSGTool.jar $< $@  -framerate 60
+	java -jar $(PSGTOOLSPATH)/PSGTool.jar $< $@  -framerate 60
 	# -uncompressed
 clean: 
 	rm -rf *.bin *.o *.bdbin *.psg wlalinkfile *.charset *.sym *.basicoffsets.i

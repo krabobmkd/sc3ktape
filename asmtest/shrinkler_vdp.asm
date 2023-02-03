@@ -4,18 +4,26 @@
 ; 212 bytes - z80 version
 
 ; port krb
-; input IX=source
-; input DE=destination		- it has to be even!
-; call shrinkler_decrunch
+
+
+
+.include sc3k.i
 
 ; you may change probs to point to any 256-byte aligned free buffer (size 2.5 Kilobytes)
 ; $1000:4k
-.define probs $f000 ; $f200
+.define probs $8000 ; $f600 ; max ram-2.kb $ $400=1k $800=2k $A00=2.5k $c00 = 3k
 .define probs_ref probs+$400
 .define probs_length probs_ref
 .define probs_offset probs_length+$200
 
-
+; all level3 takes 6ko
+;level3A:7680b left if probs is $b600.
+; basic level3A:
+; $8000-$BFFF : RAM (16K)
+;iternal ram level2:  $C000-$FFFF
+; input IX=source
+; input DE=destination		- it has to be even!
+; call shrinkler_decrunch_ram
 shrinkler_decrunch_ram:
 	call shrinkler_decrunch_start
 
@@ -67,7 +75,7 @@ getlit_vdp
 		exx
 ;		ld (de),a
 ;		inc de
-		out ($VDPData),a
+		out (VDPData),a
 
 		call getkind
 		jr nc,literal_vdp
@@ -82,11 +90,11 @@ readlength_vdp
 ;		ldir ; LD (DE),(HL), then increments DE, HL, and decrements BC)
 
 
-#	push c
-#		ld c,VDPData
+;	push c
+;		ld c,VDPData
 
-#		otir ;Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
-#   pop c
+;		otir ;Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
+;   pop c
 		pop hl
 		call getkind
 		jr nc,literal_vdp

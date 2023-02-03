@@ -7,8 +7,9 @@ An assert function which contains a breakpoint, for ease of debugging.
 */
 
 #pragma once
-
+#include <iostream>
 void internal_error() {
+    using namespace std;
 	fflush(stdout);
 	fprintf(stderr,
 		"\n\nShrinkler has encountered an internal error.\n"
@@ -33,5 +34,7 @@ static void _assert_func(const char *file, int line, const char *exp) {
 }
 #undef assert
 #define assert(__e) ((__e) ? (void)0 : _assert_func (__FILE__, __LINE__, #__e))
+#else
+#define assert(__e)
 #endif
 

@@ -1,4 +1,5 @@
-
+.ifndef _sc3k_i_
+.define _sc3k_i_ 1
 
 ; - - - - BasicLevel3 values
 .define blv3_u8_framecount $8b33
@@ -104,3 +105,5 @@
 	cp e
 	jp z,-
 .endm
+
+.endif
