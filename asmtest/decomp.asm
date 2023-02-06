@@ -57,21 +57,20 @@ dc_writeendofdatahere:
     ;jp NZ,decomploop_end ; NZ C
     jp Z,decomploop_end ; Z set if hl==bc
 
-    ; - - -  in all cases, flags shifts 2 bits
-    srl e
+    ; - - -  in all cases, flags shifts 1 bit
     srl e
     ; - - - test if need new flag
 
     dec d
     jp NZ,nonewflags
 
-    ld d,4
+    ld d,8
     ld e,(hl)
     inc hl
 
-    ;ld a,e
-    ;ld e,a
 nonewflags:
+
+	ld c,VDPData ; always need that for otir/outi
 
     ;#define CD_MEMSET 0
     ;#define CD_COPY 1
@@ -82,7 +81,7 @@ nonewflags:
 dcmp_copy:
 	; - - -  - - copy - mean length is 1, special case
 	; note: otir will write "b" bytes to video adress set at begining of decomp.
-;	ld c,VDPData
+
 	ld b,(hl)
 	inc hl
 	; a bit ugly test
@@ -90,10 +89,10 @@ dcmp_copy:
 	dec b ; test 0b xb
 	jp Z,dcmp_cp_l_is0
 	; may need + 1 byte copied here
-	ld c,VDPData
+	;ld c,VDPData
 	otir	; Reads from (HL) and writes to the (C) port. HL is incremented and B is decremented. Repeats until B = 0.
 dcmp_cp_l_is0:
-	ld c,VDPData
+	;ld c,VDPData moved
 	outi		; one more because b means [1,256]
     jp  decomploop
 dcmp_memset:
@@ -102,7 +101,7 @@ dcmp_memset:
 	inc hl
 	ld a,(hl) ; value
 	inc hl
-	ld c,VDPData
+	;ld c,VDPData moved
 dcmp_msetloop:
 	out (c),a
 	;dec b

@@ -221,10 +221,10 @@ public:
     } // end of compile
     void compress( const vector<uint8_t> &vmem, uint16_t adr, uint16_t l, vector<uint8_t> &comp )
     {
-        if(_bin.size()==0)
-        {
-            throw runtime_error("compile before compress");
-        }
+//        if(_bin.size()==0)
+//        {
+//            throw runtime_error("compile before compress");
+//        }
         // first let jump to next
         comp.push_back( 0);
         comp.push_back( 0);
@@ -240,8 +240,6 @@ public:
         // 0-> 1b n bytes (1,256), 1b value
     #define CD_MEMSET 0
     #define CD_COPY 1
-    #define CD_DICO1 2
-    #define CD_DICO2 3
         // 1-> 1b nbytes (1,256) , values to copy.
         // 2-> compr1 dico: 2b: 10b address /6b length, ->1kb, 64b copy max
         // 3-> compr2 dico: 2b: 12b adress /4b l ->4k, 16b copy max.
@@ -254,7 +252,7 @@ public:
         comp.push_back(0);
         while(i<l)
         {
-            if(byteTypepart==4)
+            if(byteTypepart==8)
             {
                 byteTypepart=0;
                 comp[flagsAdress] = bpart;
@@ -272,8 +270,8 @@ public:
                 comp.push_back(lleft-1);
                 for(uint16_t j=0;j<lleft;j++) comp.push_back(vmem[adr+i+j]);
 
-                bpart >>=2;
-                bpart |= (CD_COPY<<6);
+                bpart >>=1;
+                bpart |= (CD_COPY<<7);
                 byteTypepart++;
                 i+=lleft;
                 continue;
@@ -292,8 +290,8 @@ public:
                 cout << "push fill:" << (int)v << " l:" << consl << endl;
 
                 i+= consl;
-                bpart >>=2;
-                bpart |= (CD_MEMSET<<6);
+                bpart >>=1;
+                bpart |= (CD_MEMSET<<7);
                 byteTypepart++;
 
                 continue;
@@ -324,8 +322,8 @@ public:
 
                 cout << "push copy:" << (int)v << " l:" << il << endl;
 
-                bpart >>=2;
-                bpart |= (CD_COPY<<6);
+                bpart >>=1;
+                bpart |= (CD_COPY<<7);
                 byteTypepart++;
                 i+=il;
                 continue;
@@ -373,8 +371,8 @@ public:
         } // end while
         if(byteTypepart>0)
         {
-            while(byteTypepart<4){
-                bpart>>=2;
+            while(byteTypepart<8){
+                bpart>>=1;
                 byteTypepart++;
             }
             comp[flagsAdress] = bpart;
@@ -401,15 +399,15 @@ public:
         uint16_t i=4;
 
         uint8_t typeparts4 =0; // scomp[i];
-        uint8_t typei = 4;
+        uint8_t typei = 8;
         while(i<cs)
         {
-            if(typei==4)
+            if(typei==8)
             {
                 typei=0;
                 typeparts4 = comp[i]; i++;
             }
-            if((typeparts4 & 3)==0 ) // memset
+            if((typeparts4 & 1)==0 ) // memset
             {
                 // fill
                 uint16_t l = comp[i]; i++;
@@ -419,7 +417,7 @@ public:
                     vmem[adr]=v;
                     adr++;
                 }
-                typeparts4>>=2;
+                typeparts4>>=1;
                 typei++;
                 continue;
             }
@@ -433,7 +431,7 @@ public:
                     adr++;
                 }
 
-                typeparts4>>=2;
+                typeparts4>>=1;
                 typei++;
                 continue;
             }
@@ -449,7 +447,7 @@ void TMS_Compressor::compressGraphics2()
     // compress images in ram table using dictionary
     uint32_t nbchanges = _tms.normalizeColor1To0();
     nbchanges += _tms.normalizeColorForCompression();
-    _tms.toVerticalTiles();
+//no    _tms.toVerticalTiles();
 
     cout << "normalize bitmap nbchange: " << nbchanges << endl;
 
@@ -458,9 +456,9 @@ void TMS_Compressor::compressGraphics2()
     CompressedDic bmDic;
   //  CompressedDic clDic;
     //CompressedVMemArea vma1;
-    bmDic.feed(vmem,0, 1024*6);
-    bmDic.feed(vmem,8*1024, 1024*6);
-    bmDic.compile();
+//    bmDic.feed(vmem,0, 1024*6);
+//    bmDic.feed(vmem,8*1024, 1024*6);
+//    bmDic.compile();
     //clDic.compile();
     //feedDic(vmem,dic,vma1, 0, 1024*6);
     //
