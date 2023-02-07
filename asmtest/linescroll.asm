@@ -14,7 +14,7 @@ scroll_line_ram:
 	; update new char if needed.
 	ld a,(dd_newcharcount)
 	inc a
-	cp a,8
+	cp a,7 ; nb lines
 	jp nz,nonewchar
 		; - - read next char
 		ld hl,(dd_textptr)
@@ -108,6 +108,7 @@ colorchar: .db $e0,$f0,$f0,$f0,$e0,$e0,$e0,$e0
 ; hl data to read
 vdpcopy_from_linear_line:
 
+	; at bitmap line 16
 	SetVDPAddress ($0000+((8*32)*16)-1)
 
 	ld c,VDPData ; used by out as port id.
@@ -115,18 +116,28 @@ vdpcopy_from_linear_line:
 	;read ptr
 	ld hl,dd_linebuffer
 	;
+
 	ld a,32 ; nb char on line
 	; horizontal char loop
+
+
+
+
 -:
 	ld de,32-1 ; -1 because of outi
-	ld b,8
-	.repeat 7
-	outi  ; aka ld a,(hl);out (c) a;inc  hl ...
+	;no need:
+;	ld b,8
+	.repeat 7 ; actually 8 lines + 1
+	outi  ; Reads from (HL) and writes to the (C) port. HL is then incremented, and B is decremented.
 	add hl,de
 	.endr
-	outi
+;	outi
+	out (c),0
+
 	; resetb to line
-	ld de,32-1-(32*8) +1 ; -1 because of out1
+;	ld bc,32-1-(32*8) +1 ; -1 because of out1
+	ld de,-224+1
+	; 32-256 = -224
 	add hl,de
 	; horizontal char loop
 	dec a

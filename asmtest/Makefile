@@ -62,7 +62,7 @@ $(MEKASTATE): $(PROGNAME).bdbin
 	c64charsettoascii $@ $< charsets/c7up.64c
 # - - - - music things
 %.psg: %.vgm
-	java -jar /usr/local/share/java/PSGTool.jar $< $@  -framerate 60
+	java -jar /usr/local/share/java/PSGTool.jar $< $@  -framerate 50
 	# -uncompressed
 clean: 
 	rm -rf *.bin *.o *.bdbin *.psg wlalinkfile *.charset *.sym *.basicoffsets.i
