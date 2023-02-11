@@ -67,23 +67,14 @@ main:
 
 	call vdpcopy_color_line
 
+	call starfield3d_init
+
 	call vdp_set_screen2
 
 mainloop:
 	waitVBlank
 
-	; should do VDP copies here
-	; test
-;	ld hl,dd_linebuffer
-;	ld (hl),$aa
-;	inc hl
-;	ld (hl),$81
-;	inc hl
-;	ld (hl),$a0
-;	ld de,32
-;	add hl,de
-;	ld (hl),$81
-
+	; should do all VDP copies here
 	call vdpcopy_from_linear_line
 
 	.ifdef do_music
@@ -204,7 +195,7 @@ memset:
 	.include decomp.asm
 
 	.include linescroll.asm
-
+	.include starfield3d.asm
 	; music player source
 	.ifdef do_music
 	.include PSGLib_blv3.asm
@@ -221,12 +212,12 @@ musicdata_end:
 ext_charset:
 	.incbin CHARSET
 scrolltext:
-	.db "...HELLO PEOPLE, HOW DO YOU THINK THIS IS GOING ? .... THIS IS AN OLDSCHOOL SCROLL !!! "
+	.db "... HELLO PEOPLE, HOW DO YOU THINK THIS IS GOING ? .... THIS IS AN OLDSCHOOL SCROLL !!! "
 	.db "IT IS EVEN MORE BADASS WHEN IT RUNS ON A 1983 SEGA MACHINE THAT IS NOT MEANT TO SCROLL AT ALL IN THE FIRST PLACE !!! "
 	.db "YES THIS IS ALL 100% Z80 SUFFERING. "
 	.db "BIG GREETINGS TO ... G.E.R.A.N.I.U.M. .... FOR BEING THE FIRST DEMOGROUP TO EVER RELEASE A SEGA SC3000 TAPE DEMO IN ASSEMBLER (2019), "
 	.db "WHICH I SUPPOSE IMPLIES WE, THE ALMIGHTY -MKD-, ARE SECOND ."
-	.db "   ... ALL THIS IS ON HTTP://GITHUB.COM/KRABOBMKD ANYWAY"
+	.db "   ... ALL THIS IS ON HTTP://GITHUB.COM/KRABOBMKD ANYWAY .... SCROLL RESTART   "
 	.db 0
 ; include any ressource here
 	; this marks the end and of our binary
@@ -249,11 +240,15 @@ bin_end:
 		dd_wtempy	dw
 
 		; - - - line scroll vars
-		dd_linebuffer ds 32*8 ; actual linear bitmap of scroll line in ram
-		dd_newchar ds 8 ; bitmap of incoming char, 8: height of chars
+		dd_linebuffer ds 32*7 ; actual linear bitmap of scroll line in ram
+		dd_newchar ds 7 ; bitmap of incoming char, 8: height of chars
 		dd_newcharcount db ; each 8 pixels give new char
 		dd_textptrstart	dw ; char index in text to reset at start
 		dd_textptr	dw ; char index in text
+		; - - - - starfield vars
+		dd_mainz db
+		dd_starbase ds _sizeof_starf*stf_nbStars
+
 		; - - - -
 		;keep at end to get size:
 		dd_demodataend db

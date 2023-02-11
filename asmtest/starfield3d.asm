@@ -7,7 +7,7 @@
 ; - - -
 .define stf_nbStars 16
 
-starfield3d_tms_init:
+starfield3d_init:
 
     ; - multiply proj table
     ld hl,stf_projtable ; write
@@ -17,7 +17,9 @@ stfi_loopy:
     ld de,projtab ; read ptr, 8b value for 16
 stfi_loopx:
     push hl
-    ld l,(de)
+	ld h,d
+	ld l,e
+    ld l,(hl)
     ; kindof 5b mul
        ; todo try to have a loop per bit.
     xor a
@@ -88,38 +90,35 @@ no0:
 
     ret
 ;; ===================================
-    .struct 0 star
+    .struct starf
        ; space state
-        s_y db
-        s_x db
-        s_z db
+        y db
+        x db
+        z db
       ; draw state
-        s_flags db  ; 1 drawn 2started
-        s_bmpos dw ; in bm
+        flags db  ; 1 drawn 2started
+        bmpos dw ; in bm
 
-    .ends
+    .endst
 
 starfield3d_tms_frame:
 
     ld ix,dd_starbase
-    ld c,nbstar
+    ld c,stf_nbStars
         ; loop per star
+	ld bc,_sizeof_starf ; ad vec
 -:
-    ld a,(ix+s_z)
+    ld a,(ix+starf.z)
 
-    inc
+    ;inc
 
 
     ; - - next
-    ld de,sizeof_star
-    add hl,de
-
+	add ix,bc
     dec c
     jp nz,-
 
     ret
-; - - - - starfield vars
-    dd_mainz db
-    dd_stars ds starsize*stf_nbStars
-
-    .include projectiontable.i
+; - - - -
+projtab:
+	.incbin res/projection128.cbin
