@@ -33,13 +33,13 @@ int main(int argc, char **argv)
     {
         // max more zoomed should be 128 and even more 127 !
         const float thisXvalue = 16.0f;
-        const float thisFOV = 32.0f;
-        float x = (thisXvalue *7.99f*thisFOV) / ((float)i+32.0f);
-         divtable[i] = (uint8_t)x;
-        cout << "i: "<< i <<  "  v: " << (int) divtable[i] << endl;
+        const float thisFOV = 64.0f;
+        float x = (thisXvalue *7.99f*thisFOV) / ((float)i+64.0f);
+         divtable[127-i] = (uint8_t)x;
+        cout << "i: "<< i <<  "  v: " << (int) divtable[127-i] << endl;
 
     }
-    int res = saveVector("projection128.bin",divtable);
+    int res = saveVector("projection128.cbin",divtable);
     if(!res) return res;
 
     return 0;

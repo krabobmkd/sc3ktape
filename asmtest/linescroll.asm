@@ -94,7 +94,7 @@ slr_yloop:
 	ret
 
 vdpcopy_color_line:
-	SetVDPAddress ($2000+((8*32)*16)-1)
+	SetVDPAddress (VRAMWrite+$2000+((8*32)*16)-1)
 
 	; de free
 	ld c,VDPData

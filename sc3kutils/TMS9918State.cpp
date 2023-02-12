@@ -128,6 +128,10 @@ uint32_t TMS9918State::normalizeColor1To0()
 uint32_t TMS9918State::normalizeColorForCompression()
 {
     uint32_t nbChangedone=0;
+    // when all blank color, force an unused alternative color that can be used for plotter effects...
+    // which will compress alright anyway.
+    uint8_t alternativecolor=14 & 0x0f; // 0-15 values
+
     // just set to 0 when unified 8 pixels
     for(uint16_t i=0;i<6*1024;i++)
     {
@@ -136,15 +140,17 @@ uint32_t TMS9918State::normalizeColorForCompression()
         // case where just one color on BM
         if(bm==0)
         {   // set 0 to unused color field
-            if((cl & 0xf0) !=0)
+            //if((cl & 0xf0) !=0)
             {
-                _vmem[i+0x2000] =cl= cl & 0x0f;
+                cl= (cl & 0x0f)| (alternativecolor<<4);
+                _vmem[i+0x2000] =cl;
                 nbChangedone++;
             }
         } else if(bm==255)
         {   // rather use color field -not sure if optimize- but normalize
             _vmem[i]=bm =0;
-            _vmem[i+0x2000] =cl = (cl>>4); // switch color
+            cl = (cl>>4) | (alternativecolor<<4); // switch color
+            _vmem[i+0x2000] = cl;
             nbChangedone++;
         }
         // case where useless BM
