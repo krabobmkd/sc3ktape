@@ -6,7 +6,7 @@
 ;NOT .define stf_y_bm_shift (stf_base+ $800)
 
 ; - - -
-.define stf_nbStars 64
+.define stf_nbStars 48
 
 starfield3d_init:
 	; double buffer for writting in bm...
@@ -79,14 +79,18 @@ no0:
 	ld a,0
 	push af
 -:
+
+	; - - - - - - - - - Y
 	pop af
-	; - - - - - -
 	ld h,(iy+0)
 	inc iy
+
 	rl a ; rot previous
 	add a,h
+
 	push af
 	and $0f
+	ld d,a ; keep Y for things
 	; a random with [0,15]
 
 	; a*128
@@ -100,10 +104,37 @@ no0:
 	ld (ix+0),l
 	ld (ix+1),h
 
-	; - - next
-	ld bc,2 ; ad vec
-	add ix,bc
+	; - - - - - - - - - X
+	pop af
+	ld h,(iy+0)
+	inc iy
 
+	rl a ; rot previous
+	add a,h
+
+	push af
+	and $0f
+	; a random with [0,15]
+
+	; rule: if Y too close to center, X must be wide, so less star "keep on center", better dispersion
+	bit 3,d
+	jp z,nocase
+		res 3,a
+nocase
+	; a*128
+	ld h,a
+	ld l,0
+	srl h ; 16b shift right
+	rr l	; hl= [0,15]*128
+
+	ld bc,stf_projtable ; ad vec
+	add hl,bc ; start ptr
+	ld (ix+2),l
+	ld (ix+3),h
+
+	; - - next
+	ld bc,4 ; ad vec
+	add ix,bc
 
 	ld a,iyl
 	cp <(rndt_end) ;just compare low byte+n*s, works because size <=256 or n
