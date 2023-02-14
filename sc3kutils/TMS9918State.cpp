@@ -250,14 +250,23 @@ void TMS9918State::updateRender_Mode2()
     // background color replace 0 values:
     uint8_t bgColor = _regs._7._BackdropColor;
 
-    size_t nameTableBase =(size_t)this->adress_NameTable();
+    uint16_t nameTableBase =   0x1800 ;
+        this->adress_NameTable();
+
+    uint16_t colorbase = (_regs._3._ColorTableBaseAdress & 128)?0x2000:0;
+
+
+          //  uint8_t _PatternGeneratorBaseAdress; // modce 2: only b 7 used.
+            // 0x2000; // adress_ColorTable();
+    uint16_t patternbase =(_regs._4._PatternGeneratorBaseAdress & 128)?0x2000:0;
+
 
     // scanning line is more emulatorish.
     uint8_t *pwr= _renderedBitmap.data();
     uint32_t *pwr32= _renderedBitmap32.data();
     uint8_t yb=0;
 
-
+    // - - -translate bitmap - - - -
     for(uint16_t y=0;y<_pixelHeight ; y++)
     {
         uint16_t yl =y&7;
@@ -267,10 +276,10 @@ void TMS9918State::updateRender_Mode2()
         {
             // get bitmap using tiling
             uint16_t n = (uint16_t) _vmem[nameTableBase+xc+(yc<<5)]; // the char id that point the screen Bm
-            uint8_t bm = _vmem[screenBmShift+(n<<3)+yl]; // 8 2c pixels
+            uint8_t bm = _vmem[patternbase+screenBmShift+(n<<3)+yl]; // 8 2c pixels
             // get the 2 colors not using tiling but yet char per char
            // uint8_t cl = _vmem[0x2000+((xc+(yc<<5))<<3)+yl];
-            uint8_t cl = _vmem[0x2000+screenBmShift+(n<<3)+yl];
+            uint8_t cl = _vmem[/*0x2000+*/colorbase+screenBmShift+(n<<3)+yl];
             uint8_t bgc = cl>>4;
             if(bgc==0) bgc = bgColor;
             uint8_t fgc = cl & 0x0f;
@@ -286,5 +295,63 @@ void TMS9918State::updateRender_Mode2()
             }
         }
     }
+
+    // - - - - - - -add sprites
+    uint16_t spriteAttribBase = adress_SpriteAttribs();
+    uint16_t spritePatternsBase =  adress_SpritePatternGenerator();
+
+    bool isSize1=true;
+    for(int is=0; is<32 ;is++)
+    {
+        // attribs are on 128b aligned in vram 32*4
+        uint16_t attribs = spriteAttribBase+ is*4;
+        uint16_t yp = (uint16_t) _vmem[attribs];
+        uint16_t xp = (uint16_t) _vmem[attribs+1];
+        uint8_t n = _vmem[attribs+2];
+        uint8_t flags = _vmem[attribs+3];
+        uint8_t color = flags & 0x0f;
+        bool earlyleft = (flags & 0x80)!=0; //-32 pixel left
+
+        uint16_t pattern =spritePatternsBase+ (n<<3);
+
+        if(isSize1)
+        {
+            for(uint16_t y=0;y<16 && (y+yp)<192 ;y++)
+            {
+                uint8_t bm = _vmem[pattern+y]; // 8 2c pixels
+
+                for(uint16_t x=0;x<8 && (x+xp)<256;x++)
+                {
+                   if(bm&128)
+                   {
+                       uint16_t ipix = ((y+yp)<<8)+xp+x;
+                        _renderedBitmap[ipix] = color;
+                        _renderedBitmap32[ipix] = _paletteRGBA[color];
+                   }
+                   bm<<=1;
+                }
+            }
+            for(uint16_t y=0;y<16 && (y+yp)<192 ;y++)
+            {
+                uint8_t bm = _vmem[pattern+y+16]; // 8 2c pixels
+
+                for(uint16_t x=8;x<16 && (x+xp)<256;x++)
+                {
+                   if(bm&128)
+                   {
+                       uint16_t ipix = ((y+yp)<<8)+xp+x;
+                        _renderedBitmap[ipix] = color;
+                        _renderedBitmap32[ipix] = _paletteRGBA[color];
+                   }
+                   bm<<=1;
+                }
+            }
+        }
+
+
+
+
+    } // loop per sprites
+
 
 }

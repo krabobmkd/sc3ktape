@@ -335,15 +335,15 @@ bin_end:
 		dd_textptrstart	dw ; char index in text to reset at start
 		dd_textptr	dw ; char index in text
 		; - - - - starfield vars
-		dd_mainz db
-		dd_starpos ds (stf_nbStars*4) ; y x pointer pos, 4*nbstar
+		;dd_mainz db
+		dd_starpos ds (stf_nbStars*stf_size) ; y x pointer pos, 4*nbstar
 		;triple buffer rolling to display a bit of latency
-		dd_starbmA ds stf_nbStars*3 ; bm write pos base A
-		dd_starbmB ds stf_nbStars*3 ; bm write pos base B
-		dd_starbmC ds stf_nbStars*3 ; bm write pos base B
-		dd_starbm1 dw
-		dd_starbm2 dw
-		dd_starbm3 dw
+		;dd_starbmA ds (stf_nbStars+1)*3 ; bm write pos base A
+		;dd_starbmB ds (stf_nbStars+1)*3 ; bm write pos base B
+		;dd_starbmC ds (stf_nbStars+1)*3 ; bm write pos base B
+		;dd_starbm1 dw
+		;dd_starbm2 dw
+		;dd_starbm3 dw
 
 		.ifdef do_saveBasicLV3RamState
 		dd_basicdump ds blv3_basic_dump_size

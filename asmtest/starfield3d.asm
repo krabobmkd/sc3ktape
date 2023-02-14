@@ -1,21 +1,34 @@
 
 ; - - - - buffers
 .define stf_base $8000
+; 128*16
 .define stf_projtable (stf_base+0)
-; size=192*2
-;NOT .define stf_y_bm_shift (stf_base+ $800)
+; 128
+.define stf_framedroptable (stf_base+(128*16))
 
 ; - - -
-.define stf_nbStars 48
+.define stf_nbStars 52
+
+.define stf_w_ybstart 0
+.define stf_w_xbstart 2
+
+.define stf_w_bmadrA  4
+.define stf_b_bmvalA  6
+
+.define stf_w_bmadrB  7
+.define stf_b_bmvalB  9
+.define stf_b_bframedrop  10
+.define stf_size 11
+
 
 starfield3d_init:
 	; double buffer for writting in bm...
-	ld hl,dd_starbmA
-	ld (dd_starbm1),hl
-	ld hl,dd_starbmB
-	ld (dd_starbm2),hl
-	ld hl,dd_starbmC
-	ld (dd_starbm3),hl
+;	ld hl,dd_starbmA
+;	ld (dd_starbm1),hl
+;	ld hl,dd_starbmB
+;	ld (dd_starbm2),hl
+;	ld hl,dd_starbmC
+;	ld (dd_starbm3),hl
     ; - multiply proj table
     ld hl,stf_projtable ; write
 
@@ -72,6 +85,36 @@ no0:
     dec c
     jp nz,stfi_loopy
 
+;---- init framedrop table
+	; set 1 when no move until next value
+	ld ix,stf_framedroptable
+    ld hl,projtab ;
+	ld b,127
+
+	ld (ix+0),0
+	inc ix
+
+	ld c,(hl)
+-:
+
+	inc hl
+	ld a,(hl)
+	cp c
+	jp z,cc2
+		ld (ix+0),1
+	jp cc1
+cc2
+	ld (ix+0),0
+cc1
+
+	ld c,a
+
+	inc ix
+
+
+	djnz -
+
+
 ; - - -  - - - -
 	; set fixed x y coord for star as random, then write corresponding ptr in stf_projtable
 	ld iy,rndt
@@ -101,8 +144,8 @@ no0:
 
 	ld bc,stf_projtable ; ad vec
 	add hl,bc ; start ptr
-	ld (ix+0),l
-	ld (ix+1),h
+	ld (ix+stf_w_ybstart),l
+	ld (ix+stf_w_ybstart+1),h
 
 	; - - - - - - - - - X
 	pop af
@@ -129,11 +172,11 @@ nocase
 
 	ld bc,stf_projtable ; ad vec
 	add hl,bc ; start ptr
-	ld (ix+2),l
-	ld (ix+3),h
+	ld (ix+stf_w_xbstart),l
+	ld (ix+stf_w_xbstart+1),h
 
 	; - - next
-	ld bc,4 ; ad vec
+	ld bc,stf_size ; ad vec
 	add ix,bc
 
 	ld a,iyl
@@ -143,7 +186,7 @@ nocase
 noresetrnd
 	; test loop
 	ld a,ixl
-	cp <(dd_starpos+(4*stf_nbStars)) ;just compare low byte+n*s, works because size <=256 or n
+	cp <(dd_starpos+(stf_size*stf_nbStars)) ;just compare low byte+n*s, works because size <=256 or n
 	jp nz,-
 
 	pop af
@@ -152,36 +195,51 @@ rndt:
 	.db $30,$e2,$57,$93,$01
 rndt_end:
 ;; ===================================
-    .struct starf
-       ; space state
-        ybstart dw
-        xbstart dw
-    .endst
+;.define stf_nbStars 48
+
+;.define stf_w_ybstart 0
+;.define stf_w_xbstart 2
+
+;.define stf_w_bmadrA  4
+;.define stf_b_bmvalA  6
+
+;.define stf_w_bmadrB  7
+;.define stf_b_bmvalB  9
+;.define stf_b_bframedrop  10
+;.define stf_size 11
 
 starfield3d_frame_ram:
 
 
 ; e=z running
-	ld hl,dd_mainz
+	ld hl,blv3_u8_framecount
 	ld e,(hl) ; z 0->127, could use frame counter
 
-    ld hl,dd_starpos
-
-	ld ix,(dd_starbm1)
-
+	ld l,0 ; just to count
+	ld ix,dd_starpos
+	; hl free
 -
 	res 7,e ; and $7f  , one time for y and x
+
+	; test framedrop
+	ld d,0 ;de !
+	ld iy,stf_framedroptable ; is 256 aligned
+	add iy,de
+	ld a,(iy+0)
+	ld (ix+stf_b_bframedrop),a
+	bit 0,a
+	jp z,stf_invalid
+
 	; - - - -  treat Y
-	ld c,(hl)
-	inc hl
-	ld b,(hl)
-	inc hl
+	ld c,(ix+stf_w_ybstart+0)
+	ld b,(ix+stf_w_ybstart+1)
 
 	ld a,e	; add z to pointer
 	add a,c
 	ld c,a
 
 	ld a,(bc) ; read projection table for y (0,127)
+
 	; for Y only manage [0,95]
 	cp 95
 	jp nc,stf_invalid
@@ -198,21 +256,20 @@ noneg_y
 	srl d
 	srl d	; ___YYYYY XXXXXyyy
 	; high ___YYYYY can be written here
-	ld (ix+1),d
+	ld (ix+stf_w_bmadrA+1),d
 
 	and %00000111
 	ld d,a ;  _____yyy
 
 	; - - - -  treat x now
-	ld c,(hl) ; get x on proj pointer
-	inc hl
-	ld b,(hl)
-	inc hl
+	ld c,(ix+stf_w_xbstart+0) ; get x on proj pointer
+	ld b,(ix+stf_w_xbstart+1)
 
 	ld a,e	; add z on base
 	add a,c
 	ld c,a
 	ld a,(bc) ; read projection table for x (0,127)
+
 	bit 3,l ; neg x sometimes (2/4) to have 4 quarters
 	jp z,noneg_x
 		neg
@@ -224,55 +281,41 @@ noneg_x
 
 	or a,d ; XXXXXyyy
 	; low XXXXXyyy can be written here
-	ld (ix+0),a
-	inc ix
-	inc ix
+	ld (ix+stf_w_bmadrA+0),a
 
-	; todo bm value:
-;	ld a,$14
-;	ld (ix+0),a
-;	inc ix
-	; - -  sure this could be optimized
+	; - - find x value to write in bm, sure this could be optimized
 	ld a,c ; re-x
 	and %00000111
 	ld c,a ; low8 x
 	ld b,0
 	ld iy,shiftdotdb
 	add iy,bc ; just need +0+7 , but 16 b because of adress.-> or use $8000 temp
-
 	ld a,(iy+0)
-	ld (ix+0),a ; write
-	inc ix
+
+
+	ld (ix+stf_b_bmvalA),a ; value to write
 
 	jp stf_ok
 stf_invalid
-	; so 0
-	ld (ix+0),0 ; will write 0 at bm 0
-	inc ix
-	ld (ix+0),0
-	inc ix
-	ld (ix+0),0
-	inc ix
-
-	inc hl	; the unused x ptr
-	inc hl
-	;ld bc,_sizeof_starf-2 ; ad vec
-	;add hl,bc
+	ld (ix+stf_w_bmadrA+1),$80
+	;ld (ix+stf_b_bmok),0 ; would mean not OK
 stf_ok
 	; - - - - -- - -
 	inc e ; z
 	inc e
+	inc e
     ; - - next
-	;ld bc,_sizeof_starf ; ad vec
-	;add hl,bc
+	ld bc,stf_size ; ad vec
+	add ix,bc
+	inc l
 	; test loop
-	ld a,l
-	cp <(dd_starpos+(4*stf_nbStars)) ;just compare low byte+n*s, works because size <=256 or n
+	ld a,ixl
+	cp <(dd_starpos+(stf_size*stf_nbStars)) ;just compare low byte+n*s, works because size <=256 or n
 	jp nz,-
 
 	; inc z for next time
-	ld hl,dd_mainz
-	inc (hl)
+	;ld hl,dd_mainz
+	;inc (hl)
 
 	; swap double buffer for writting in bm...
 ;	ld bc,(dd_starbm1)
@@ -284,44 +327,48 @@ stf_ok
  ;bm2 -> to bm1
  ;bm3 ->to bm2
 	; roll triple buffer
-	ld bc,(dd_starbm1)
-	ld de,(dd_starbm2)
-	ld hl,(dd_starbm3)
+;	ld bc,(dd_starbm1)
+;	ld de,(dd_starbm2)
+;	ld hl,(dd_starbm3)
 
-	ld (dd_starbm3),bc
-	ld (dd_starbm1),de
-	ld (dd_starbm2),hl
+;	ld (dd_starbm3),bc
+;	ld (dd_starbm1),de
+;	ld (dd_starbm2),hl
 
     ret
 shiftdotdb:
 	.db $80,$40,$20,$10,$08,$04,$02,$01
 starfield3d_frame_vdp:
 
-; = = = = = = = = = == = = erase previous points
+;.define stf_w_ybstart 0
+;.define stf_w_xbstart 2
 
-	ld hl,(dd_starbm2)  ; & or 2 previous frame
-	call starfield3d_frame_vdpB
-	ld hl,(dd_starbm3)  ; current frame
-	call starfield3d_frame_vdpB
-	ret
-starfield3d_frame_vdpB:
+;.define stf_w_bmadrA  4
+;.define stf_b_bmvalA  6
+
+;.define stf_w_bmadrB  7
+;.define stf_b_bmvalB  9
+;.define stf_b_bframedrop  10
+;.define stf_size 11
+
 ; - - -= = = = = = = = = = = = == == = =  write new points
 
 	;ld ixl,stf_nbStars
+	ld ix,dd_starpos
 	ld bc,(stf_nbStars<<8) | $bf ; VDPControl  ; VDPData be		; VRAMWrite
 -
-	;  - - - set read adress
+	bit 7,(ix+stf_w_bmadrA+1)
+	jp nz,nextdot
+	;ld (ix+stf_b_bframedrop),a
+	;bit 0,a
+	;jp nz,nextdot
+
+	; - - - - - - - remove previous
 	; "The lower eight bits are written first. "
-	ld a,(hl)
-	cp 0
-	jp z,invaliddot
-	inc hl
-	ld d,(hl)
-
-	out (c),a ; $bf VDPControl
-
-	dec hl ; because reread for write
+	ld d,(ix+stf_w_bmadrB+0)
 	out (c),d ; $bf VDPControl
+	ld a,(ix+stf_w_bmadrB+1)
+	out (c),a ; $bf VDPControl
 	;read
 	dec c
 	in e,(c) ; e prev bm value
@@ -329,34 +376,54 @@ starfield3d_frame_vdpB:
 
 	;  - - - set write adress
 	; "The lower eight bits are written first. "
-	ld a,(hl) ; written backward big endian
-	inc hl
-	out (c),a ; $bf VDPControl
-
-	;opt?
-	ld a,(hl)
+	out (c),d ; $bf VDPControl
 	or $40 ; for VRAMWrite
-	inc hl
 	out (c),a ; $bf VDPControl
 
 	; - -  - write data
-	ld a,(hl) ; bm star value
-	inc hl
+	ld a,(ix+stf_b_bmvalB) ; bm star value
 	xor e ; xor original bm
 
 	dec c	; magic, -> $be VDPData
 	out (c),a
 	inc c ; re,  -> $bf VDPControl
 
-	djnz -
-	jp afterdot
+	; = = = = = = = = = = = = =
+	;  - - - set read adress
+	; "The lower eight bits are written first. "
+	ld d,(ix+stf_w_bmadrA+0)
+	ld (ix+stf_w_bmadrB+0),d
 
-invaliddot
-	inc hl
-	inc hl
-	inc hl
+	out (c),d ; $bf VDPControl
+	ld a,(ix+stf_w_bmadrA+1)
+	ld (ix+stf_w_bmadrB+1),a
+	out (c),a ; $bf VDPControl
+	;read
+	dec c
+	in e,(c) ; e prev bm value
+	inc c
+
+	;  - - - set write adress
+	; "The lower eight bits are written first. "	
+	out (c),d ; $bf VDPControl
+	or $40 ; for VRAMWrite
+	out (c),a ; $bf VDPControl
+
+	; - -  - write data
+	ld a,(ix+stf_b_bmvalA) ; bm star value
+	ld (ix+stf_b_bmvalB),a
+	xor e ; xor original bm
+
+	dec c	; magic, -> $be VDPData
+	out (c),a
+	inc c ; re,  -> $bf VDPControl
+nodraw
+
+nextdot
+	ld de,stf_size ; ad vec
+	add ix,de
+
 	djnz -
-afterdot
 
 	ret
 
