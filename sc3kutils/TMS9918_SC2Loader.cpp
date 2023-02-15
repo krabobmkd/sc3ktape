@@ -25,6 +25,24 @@ void TMS_SC2Loader::load(std::istream &ifs)
   //  uint8_t sc2regs[7];
     TMS9918State::TMSregs &regs = _tms.regs();
     ifs.read((char *)&regs._0,7);
+
+    // for msx idiot grab:
+    regs._6._SpritePatternGeneratorBaseAdress = 7; // its 3 or 7.
+// 1b00 / $80 -> $36
+    regs._5._SpriteAttribTableBaseAdress = 0x36;
+
+    /*
+    if(regs._5._SpriteAttribTableBaseAdress==0)
+    {
+        // unlikely ! .sc2 not correct !
+        regs._5._SpriteAttribTableBaseAdress = 0x76;  // seen: $76 or $7f
+
+    }
+    if(regs._6._SpritePatternGeneratorBaseAdress==0)
+    {
+        // unlikely ! .sc2 not correct !
+        regs._6._SpritePatternGeneratorBaseAdress = 3;  // after bitmap often used
+    }*/
 //    ifs.read((char *)sc2regs,7);
 //old
  //   _tms.setMode_Graphics2Default();

@@ -297,6 +297,7 @@ void TMS9918State::updateRender_Mode2()
     }
 
     // - - - - - - -add sprites
+
     uint16_t spriteAttribBase = adress_SpriteAttribs();
     uint16_t spritePatternsBase =  adress_SpritePatternGenerator();
 
