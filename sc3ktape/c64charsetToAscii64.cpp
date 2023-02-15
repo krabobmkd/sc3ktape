@@ -51,9 +51,11 @@ int main(int argc, char **argv)
             // then petscii things
     ;
 
+    const int byteperchar=7; // or 8.
+    const int nbcharused = 64-5;
 
-    vector<char> asciics(64*8,0);
-    for(size_t i=0;i<64;i++)
+    vector<char> asciics(nbcharused*byteperchar,0);
+    for(size_t i=0;i<nbcharused;i++)
     {
         char asciishift=32+(char)i;
         size_t charinpet=c64order.find(asciishift);
@@ -69,9 +71,9 @@ int main(int argc, char **argv)
             pInPet = vC64f.data()+(2+charinpet*8);
         }
 
-        for(size_t j=0;j<8;j++)
+        for(size_t j=0;j<byteperchar;j++)
         {
-            asciics[i*8+j] = *pInPet++;
+            asciics[i*byteperchar+j] = *pInPet++;
         }
     }
     ofstream ofs(argv[1], ios::binary| ios::out);

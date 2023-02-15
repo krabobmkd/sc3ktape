@@ -32,14 +32,18 @@ charok:
 		sub a,32 ; first char to zero [32,96] -> [0,63]
 		ld h,0
 		ld l,a
-		add hl,hl ; *8 char size ->[0->512-8]
+		add hl,hl ;*7 char size old: *8 char size ->[0->512-8]
 		add hl,hl
 		add hl,hl
+		ld b,0
+		ld c,a
+		sbc hl,bc ;*(8-1)
+
 		ld bc,ext_charset
 		add hl,bc ; hl points char
 		; LD (DE),(HL),
 		ld de,dd_newchar
-		ld bc,8 ; or 7 ?
+		ld bc,7 ;8 or 7 ?
 		ldir
 
 		xor a ; clear a, count 8 pixels stil next
@@ -90,7 +94,7 @@ slr_yloop:
 	ret
 
 vdpcopy_color_line:
-	SetVDPAddress ($2000+((8*32)*16)-1)
+	SetVDPAddress (VRAMWrite+$2000+((8*32)*16)-1)
 
 	; de free
 	ld c,VDPData

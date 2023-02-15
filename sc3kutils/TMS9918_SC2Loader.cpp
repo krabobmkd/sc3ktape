@@ -22,8 +22,12 @@ void TMS_SC2Loader::load(std::istream &ifs)
     ifs.seekg(0,ios::beg);
   //  TMS9918State::TMSregs &regs = _tms.regs();
   //  ifs.read((char *)&regs._0,7);
-    uint8_t sc2regs[7];
-    ifs.read((char *)sc2regs,7);
-    _tms.setMode_Graphics2Default();
+  //  uint8_t sc2regs[7];
+    TMS9918State::TMSregs &regs = _tms.regs();
+    ifs.read((char *)&regs._0,7);
+//    ifs.read((char *)sc2regs,7);
+//old
+ //   _tms.setMode_Graphics2Default();
+
     ifs.read((char *)_tms.vmem().data(),bsize-7 );
 }
