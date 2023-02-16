@@ -50,46 +50,76 @@ int main(int argc, char *argv[])
     Log::global().setWarningErrorAutoColor(true);
     if(argc<2)
     {
-        LOGI() << " need .sc2 file as arg1 \n";
+        LOGI() << "pixer need .sc2 or .gif file as arg1 \n";
         LOGI() << endl;
         return 0;
     }
-    string sc2file = argv[1];
+    string filepath = argv[1];
+
+    bool isSc2 = (filepath.rfind(".sc2") == filepath.length()-4);
+    if(filepath.rfind(".SC2") == filepath.length()-4) isSc2 = true;
+    bool isGif = (filepath.rfind(".gif") == filepath.length()-4);
+    if(filepath.rfind(".GIF") == filepath.length()-4) isGif = true;
 
     vchip::TMS9918State tms;
-    /*validation
-    tms.setMode_Graphics2Default();
-    tms.vpoke(0,129);
-    tms.vpoke(1,24);
-    tms.vpoke(7,36);
-    tms.vpoke(8*3,129);
-    tms.vpoke(8*33+7,255-129);
 
-    tms.vpoke(0+0x2000,0x47);
-*/
     TMS_SC2Loader tmsLoader(tms);
 
-    try {
-        ifstream ifs(sc2file, ios::binary|ios::in);
-        if(!ifs.good())
-        {
-            stringstream ss;
-            ss << "can't read .sc2 image file :" << sc2file << endl;
-            throw runtime_error(ss.str());
-        }
-
-        tmsLoader.load(ifs);
-
-        TMS_Compressor exporter(tms);
-        string exportname = trimfileName(sc2file) + ".asm";
-
-        ofstream exportOfs(exportname, ios::binary|ios::out);
-        exporter.compressGraphics2();
-        exporter.exportAsm(exportOfs,"gfx");
-
-    } catch(const std::exception &e)
+    if(isSc2)
     {
-        cout << "exc: " << e.what() << endl;
+
+        try {
+            ifstream ifs(filepath, ios::binary|ios::in);
+            if(!ifs.good())
+            {
+                stringstream ss;
+                ss << "can't read .sc2 image file :" << filepath << endl;
+                throw runtime_error(ss.str());
+            }
+
+            tmsLoader.load(ifs);
+
+            TMS_Compressor exporter(tms);
+            string exportname = trimfileName(filepath) + ".asm";
+
+            ofstream exportOfs(exportname, ios::binary|ios::out);
+            exporter.compressGraphics2();
+            exporter.exportAsm(exportOfs,"gfx");
+
+        } catch(const std::exception &e)
+        {
+            cout << "exc: " << e.what() << endl;
+        }
+    }
+    if(isGif)
+    {
+
+        try {
+            /*ifstream ifs(filepath, ios::binary|ios::in);
+            if(!ifs.good())
+            {
+                stringstream ss;
+                ss << "can't read .sc2 image file :" << filepath << endl;
+                throw runtime_error(ss.str());
+            }
+            tmsLoader.load(ifs);
+            */
+
+            SDL_Surface * pImageToConv = IMG_Load(filepath.c_str());
+            cout << "pixel depth:" << (int) pImageToConv->format->BitsPerPixel << endl;
+
+
+            TMS_Compressor exporter(tms);
+            string exportname = trimfileName(filepath) + ".asm";
+
+            ofstream exportOfs(exportname, ios::binary|ios::out);
+            exporter.compressGraphics2();
+            exporter.exportAsm(exportOfs,"gfx");
+
+        } catch(const std::exception &e)
+        {
+            cout << "exc: " << e.what() << endl;
+        }
     }
 
 
