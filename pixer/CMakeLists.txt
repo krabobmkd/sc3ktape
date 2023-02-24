@@ -26,8 +26,8 @@ endif()
         ../sc3kutils/TMS9918State.h
         ../sc3kutils/TMS9918_PetsciiLoader.h
         ../sc3kutils/TMS9918_PetsciiLoader.cpp
-#		../sc3kutils/TMS9918_BmConverter.cpp
-#        ../sc3kutils/TMS9918_BmConverter.h
+		../sc3kutils/TMS9918_BmConverter.cpp
+        ../sc3kutils/TMS9918_BmConverter.h
         ../sc3kutils/TMS9918_SC2Loader.cpp
         ../sc3kutils/TMS9918_SC2Loader.h
         ../sc3kutils/TMS9918_SC3KExport.cpp

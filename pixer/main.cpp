@@ -23,6 +23,8 @@
 #include "TMS9918State.h"
 #include "TMS9918_SC2Loader.h"
 #include "TMS9918_SC3KExport.h"
+#include "TMS9918_BmConverter.h"
+
 
 #include "log.h"
 //#include <jsoncpp/json/json.h>
@@ -104,17 +106,40 @@ int main(int argc, char *argv[])
             }
             tmsLoader.load(ifs);
             */
+            class BmIndexPixSDLI : public BmIndexPix {
+                public:
+                    uint8_t pix(int x, int y) const override {
 
-            SDL_Surface * pImageToConv = IMG_Load(filepath.c_str());
-            cout << "pixel depth:" << (int) pImageToConv->format->BitsPerPixel << endl;
+                    }
+                    uint16_t width() const const override {
+                        retu
+                    }
+                    uint16_t height() const  const override {
+
+                    }
+                    SDL_Surface *_pImage;
+                 };
+            BmIndexPixSDLI       bmi;
+            bmi._pImage = IMG_Load(filepath.c_str());
+            cout << "pixel depth:" << (int)  bmi._pImage->format->BitsPerPixel << endl;
+
+            TMS_BmConverter bmconv(tms);
 
 
-            TMS_Compressor exporter(tms);
-            string exportname = trimfileName(filepath) + ".asm";
 
-            ofstream exportOfs(exportname, ios::binary|ios::out);
-            exporter.compressGraphics2();
-            exporter.exportAsm(exportOfs,"gfx");
+
+
+            bmconv.mode2MapIndexedPixelBm()
+            // pure sprite conv
+            // ...
+            // screen2AndSprite
+
+
+//            TMS_Compressor exporter(tms);
+//            string exportname = trimfileName(filepath) + ".asm";
+//            ofstream exportOfs(exportname, ios::binary|ios::out);
+//            exporter.compressGraphics2();
+//            exporter.exportAsm(exportOfs,"gfx");
 
         } catch(const std::exception &e)
         {

@@ -75,6 +75,9 @@ main:
 
 	call vdp_set_screen2
 
+	; need to check PAL/NTSC
+	call checkPalOrNtsc
+
 mainloop:
 	waitVBlank
 
@@ -282,7 +285,7 @@ basiclevel3dumpadrEnd:
 
 	; gfx decompression
 	.include decomp.asm
-
+	.include sc3k.asm
 	.include linescroll.asm
 	.include starfield3d.asm
 	; music player source
@@ -327,7 +330,8 @@ bin_end:
 		; all global vars should be defined there:
 		dd_wtempx	dw
 		dd_wtempy	dw
-
+		; - - - machine state
+		dd_isPal	db
 		; - - - line scroll vars
 		dd_linebuffer ds 32*7 ; actual linear bitmap of scroll line in ram
 		dd_newchar ds 7 ; bitmap of incoming char, 8: height of chars
