@@ -36,7 +36,8 @@ public:
 
     int writeBasic(std::ostream &outputStream);
     int writeWave(std::ostream &outputStream,std::string progName,int bitsPerSample=8, int freq=22050);
-    int writeDumpBin(std::ostream &outputStream);
+    int writeDirectBin(std::ostream &outputStream);
+    size_t writeDumpBin(std::ostream &outputStream);
     int writeAsmIncludeWithOffsets(std::ostream &outputStream);
 
     //! optional after writeBasic
@@ -61,6 +62,9 @@ public:
     inline void setPreProcNames(const std::map<std::string,std::string> &names) {
         m_preproc_names = names;
     }
+    inline void setDirectToBin(bool bDirectToBin) {
+        m_bDirectToBin = bDirectToBin;
+    }
 
 protected:
     // from first chunk header:
@@ -77,6 +81,7 @@ protected:
 
     bool        m_isEuroAscii;
     bool        m_bAddSpaces;
+    bool        m_bDirectToBin;
     int         m_postBinaryLength;
     std::string m_sourceBasePath;
 

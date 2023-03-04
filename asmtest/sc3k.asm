@@ -26,12 +26,13 @@ checkPalOrNtsc:
 
 	; compare bc
 	;xor a
-	ld (dd_isPal),0 ; default: ntsc
+	ld ix,dd_isPal
+	ld (ix+0),0 ; default: ntsc
 
 	ld de,2418 ; in between
 	sbc hl,de
 	ret c
 
-	ld (dd_isPal),1	; pal
+	ld (ix+0),1	; pal
 
     ret

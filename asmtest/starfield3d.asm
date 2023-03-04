@@ -7,7 +7,7 @@
 .define stf_framedroptable (stf_base+(128*16))
 
 ; - - -
-.define stf_nbStars 52
+.define stf_nbStars 16 ; pal 52
 
 .define stf_w_ybstart 0
 .define stf_w_xbstart 2
@@ -15,7 +15,7 @@
 .define stf_w_bmadrA  4
 .define stf_b_bmvalA  6
 
-.define stf_w_bmadrB  7
+.define stf_w_bmadrB  7                                                                                                   
 .define stf_b_bmvalB  9
 .define stf_b_bframedrop  10
 .define stf_size 11

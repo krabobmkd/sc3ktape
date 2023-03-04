@@ -2,7 +2,7 @@
 .include sc3k.i
 .include basicinit.basicoffsets.i
 
-.define do_music 1
+;.define do_music 1
 .define do_saveBasicLV3RamState 1
 
 .memorymap
@@ -83,8 +83,27 @@ mainloop:
 
 	; should do all VDP copies the quickliest possible, here after waitVBlank.
 
+	ld c,VDPControl
+	ld a,$12
+	out (c),a
+	ld a,$87
+	out (c),a
+
 	call vdpcopy_from_linear_line
+
+	ld c,VDPControl
+	ld a,$14
+	out (c),a
+	ld a,$87
+	out (c),a
+
 	call starfield3d_frame_vdp
+
+	ld c,VDPControl
+	ld a,$16
+	out (c),a
+	ld a,$87
+	out (c),a
 
 	.ifdef do_music
 		call PSGFrame
@@ -93,6 +112,13 @@ mainloop:
 	; should do ram stuff here
 	call scroll_line_ram
 	call starfield3d_frame_ram
+
+
+	ld c,VDPControl
+	ld a,$11
+	out (c),a
+	ld a,$87
+	out (c),a
 
 
 ; - -  test inputs for quitting

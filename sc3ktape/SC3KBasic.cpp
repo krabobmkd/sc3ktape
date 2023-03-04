@@ -501,6 +501,7 @@ SC3KBasic::SC3KBasic()
     , _ProgramStart(0)
     , m_isEuroAscii(false)
     , m_bAddSpaces(true)
+    , m_bDirectToBin(false)
     , m_postBinaryLength(0)
 {
 
@@ -679,6 +680,17 @@ int SC3KBasic::readWave(std::istream &inputStream)
         throw runtime_error( "Dummy zero not correct at end of header chunk." );
     }
 
+    if(m_bDirectToBin)
+    {
+        m_bytes = soundToBytes.vbytes();
+        if(m_bytes.size()>=2 && m_bytes[1].size()>3)
+        {
+          // in the case of saved bin and no basic (8160 pointer trick), need to remove
+            // 3 bytes at end
+            m_bytes[1].resize(m_bytes[1].size()-3);
+        }
+        return 0; // if direct to bin, do not decrypt program.
+    }
 
     // - - - program chunk:
     const vector<unsigned char> &programBin = vb[1];
@@ -1158,7 +1170,7 @@ int SC3KBasic::writeAsmIncludeWithOffsets(std::ostream &outputStream)
     return 0;
 }
 
-int SC3KBasic::writeDumpBin(std::ostream &outputStream)
+size_t SC3KBasic::writeDumpBin(std::ostream &outputStream)
 {
     // basic should be read, and m_bytes should contains the header and the program chunk.
     // here, we are only interested to have a bin file with just the program chunk, as it is.
@@ -1168,14 +1180,14 @@ int SC3KBasic::writeDumpBin(std::ostream &outputStream)
     }
     const vector<unsigned char> &programChunk = m_bytes[1];
     // should be at least one line...
-    if(programChunk.size()<6)
+    if(programChunk.size()<2)
     {
         throw runtime_error("program information invalid");
     }
     // really just that: the opcode compressed version, may contain optional data.
     // note jump first char which is just the "17" is.
     outputStream.write((char *)(programChunk.data()+1), programChunk.size()-1);
-    return 0;
+    return programChunk.size()-1;
 }
 
 int SC3KBasic::writeBasic(std::ostream &outputStream)

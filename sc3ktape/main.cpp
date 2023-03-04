@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
         LOGI() << " tape to basic options:\n";
         LOGI() << "   -jp:      for japan basic, use utf8 katakana, else european dieresis.\n";
         LOGI() << "   -tolabel: replace lines number by tabs and generate labels (usable with b2t).\n";
+        LOGI() << "   -directbin: output raw data when saving bin with $8160/$8162 pointers trick.\n";
+
         LOGI() << " basic to tape options:\n";
         LOGI() << "   -nNAME: give header prog file name for tape wave header.\n";
         LOGI() << "   -tobdbin: only output the basic memory dump that can fit $9800 in emus.\n";
@@ -92,6 +94,7 @@ int main(int argc, char *argv[])
     bool toDumpBin = false;
     bool toBasicOffsetsInclude = false;
     bool waves16le=false;
+    bool isDirectToBin=false;
 
     string programName=endsWithbin?"BINARY":"BASIC"; // default.
 
@@ -132,6 +135,7 @@ int main(int argc, char *argv[])
         }
         if(strarg == "-jp") jpCharset=true;
         if(strarg == "-tobdbin") toDumpBin=true;
+        if(strarg == "-directbin") isDirectToBin=true;
         if(strarg == "-tobasicoffsets") toBasicOffsetsInclude=true;
         if(strarg == "-waves16le") waves16le=true;
     }
@@ -139,16 +143,39 @@ int main(int argc, char *argv[])
     try {
     if(isSoundFormat)
     {       // - - - - input is wave
+
+        if(isDirectToBin) // direct wave to bin
+        {
+            SC3KBasic wr;
+            wr.setDirectToBin(true);
+            wr.readWave(inputstream);
+            string outputPostfix = ".sc.bin";
+            if(outputfile.length()==0)
+            {
+                outputfile = inputfile +outputPostfix;
+            }
+             ofstream ofs(outputfile.c_str(), ios::binary);
+            if( !ofs.good())
+            {
+                throw runtime_error(string("can't write to: ") + outputfile);
+            }
+            size_t bdone = wr.writeDumpBin(ofs);
+            LOGI() << "Tape Wave exported to dump bin: " << outputfile << " with size: " << bdone << endl;
+
+        } else
+        {
+            // basic text output
+
             SC3KBasic wr;
             wr.setIsEuroAscii(!jpCharset);
             wr.readWave(inputstream);
+            string outputPostfix = ".sc.bas";
             if(outputfile.length()==0)
             {
-                outputfile = inputfile + ".sc.bas";
+                outputfile = inputfile +outputPostfix;
             }
             if(lineIndexToLabels)  wr.lineIndexToLabels();
-
-            ofstream ofs(outputfile.c_str(), ios::binary);
+             ofstream ofs(outputfile.c_str(), ios::binary);
             if( !ofs.good())
             {
                 throw runtime_error(string("can't write to: ") + outputfile);
@@ -167,6 +194,8 @@ int main(int argc, char *argv[])
                 LOGI() << "Also exported extra post-binary of length: "<< wr.postBinaryLength()
                        <<" to binary file: " << postbinfilename << endl;
             }
+        } // end basic text output
+
     } else
     {
         // basic or basic + asm , to tape wave or to basic dumpbin.
